@@ -1,0 +1,2174 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#bfe9f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="יומן מסע">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>יומן מסע</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=David+Libre:wght@400;500;700&family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #cfeefa;
+    --bg2: #eaf8fc;
+    --card: #ffffff;
+    --card-b: rgba(34,90,112,0.14);
+    --paper: #173746;
+    --dim: rgba(23,55,70,0.60);
+    --gold: #2c91b5;
+    --sakura: #e47b9a;
+    --teal: #3c9b8b;
+    --danger:#c25454;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: linear-gradient(180deg,#bfe9f7 0%,#eaf8fc 55%,#f7fcfe 100%);
+    background-attachment: fixed;
+    color:var(--paper);
+    font-family:'Rubik',sans-serif;
+    min-height:100vh;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:calc(125px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--gold); color:#161210; }
+
+  header{
+    padding:40px 20px 20px;
+    max-width:720px; margin:0 auto;
+  }
+  .top-actions{display:flex;gap:8px;justify-content:flex-start;margin-bottom:16px;flex-wrap:wrap;}
+  .save-btn,.export-btn{border:1px solid var(--card-b);border-radius:9px;padding:9px 13px;font-family:'Rubik',sans-serif;font-size:12px;cursor:pointer;transition:.2s;}
+  .save-btn{background:var(--gold);color:white;border-color:var(--gold);font-weight:600;}
+  .export-btn{background:rgba(255,255,255,.7);color:var(--paper);}
+  .save-btn.saved{background:var(--teal);border-color:var(--teal);}
+  .eyebrow{
+    font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--gold); font-weight:500; margin-bottom:10px;
+  }
+  h1{
+    font-family:'David Libre',serif;
+    font-weight:700;
+    font-size:clamp(30px,7vw,44px);
+    margin:0 0 6px;
+    line-height:1.1;
+  }
+  .route-line{
+    display:flex; align-items:center; gap:8px;
+    margin-top:14px; font-size:13px; color:var(--dim);
+  }
+  .route-line .dot{ width:7px; height:7px; border-radius:50%; background:var(--sakura); flex:none; }
+  .route-line .dot.th{ background:var(--gold); }
+  .route-line .track{ flex:1; height:1px; background:linear-gradient(90deg, var(--sakura), var(--gold)); }
+
+  main{ max-width:720px; margin:0 auto; padding:0 20px; }
+
+  .view{ display:none; animation:fade .3s ease; }
+  .view.active{ display:block; }
+  @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .domestic-flights{display:grid;gap:10px;}
+  .domestic-flight-card{padding:12px;border:1px solid var(--card-b);border-radius:12px;background:rgba(255,255,255,.62);}
+  .domestic-flight-title{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:9px;}
+  .domestic-delete{font-size:11px;padding:5px 8px;}
+
+  /* Day Card */
+  .day-card{
+    background:var(--card);
+    border:1px solid var(--card-b);
+    border-radius:var(--radius);
+    padding:18px 18px 16px;
+    margin-bottom:14px;
+    position:relative;
+  }
+  .day-head{
+    display:flex; align-items:flex-start; gap:14px; margin-bottom:10px;
+  }
+  .stamp{
+    width:48px; height:48px; border-radius:50%;
+    border:2px dashed var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'David Libre',serif; font-weight:700; font-size:16px;
+    color:var(--gold); flex:none;
+  }
+  .day-fields{ flex:1; min-width:0; }
+  .day-fields input[type=text], .day-fields input[type=date]{
+    background:none; border:none; color:var(--paper);
+    font-family:'David Libre',serif; font-size:19px; font-weight:700;
+    width:100%; padding:2px 0; outline:none;
+  }
+  .day-fields .sub-row{ display:flex; gap:10px; margin-top:4px; }
+  .day-fields .sub-row input{
+    background:none; border:none; color:var(--dim); font-size:13px;
+    outline:none; font-family:'Rubik',sans-serif;
+  }
+  .day-fields .sub-row input:focus{ color:var(--paper); }
+  .country-tag{
+    font-size:11px; padding:3px 9px; border-radius:20px; font-weight:500;
+    border:1px solid var(--card-b); color:var(--dim); cursor:pointer; flex:none;
+  }
+  .country-tag.jp{ border-color:rgba(224,116,138,0.5); color:var(--sakura); }
+  .country-tag.th{ border-color:rgba(201,162,39,0.5); color:var(--gold); }
+
+  .notes-area{
+    width:100%; background:rgba(0,0,0,0.15); border:1px solid var(--card-b);
+    border-radius:10px; color:var(--paper); font-family:'Rubik',sans-serif;
+    font-size:14px; padding:10px 12px; resize:vertical; min-height:52px;
+    outline:none; margin-top:6px;
+  }
+  .notes-area:focus{ border-color:var(--gold); }
+  .day-actions{ display:flex; justify-content:flex-end; margin-top:8px; }
+  .icon-btn{
+    background:none; border:none; color:var(--dim); cursor:pointer;
+    font-size:12px; padding:4px 8px; border-radius:6px; transition:.2s;
+  }
+  .icon-btn:hover{ color:var(--danger); background:rgba(194,84,84,0.1); }
+
+  .add-btn{
+    width:100%; padding:14px; border-radius:var(--radius);
+    border:1px dashed var(--card-b); background:none; color:var(--dim);
+    font-family:'Rubik',sans-serif; font-size:14px; cursor:pointer;
+    margin-top:4px; transition:.2s;
+  }
+  .add-btn:hover{ border-color:var(--gold); color:var(--gold); }
+
+  /* Destination Tabs */
+  .destination-tabs{
+    display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;
+    border-bottom:1px solid var(--card-b); padding-bottom:12px;
+  }
+  .dest-tab{
+    padding:8px 14px; border-radius:8px; background:none; border:1px solid var(--card-b);
+    color:var(--dim); cursor:pointer; font-size:13px; transition:.2s;
+    font-weight:500;
+  }
+  .dest-tab.active{
+    background:var(--gold); color:#161210; border-color:var(--gold);
+  }
+  .dest-tab:hover{
+    border-color:var(--gold);
+  }
+
+  /* Destination Content */
+  .destination-content{
+    display:none;
+    animation:fade .3s ease;
+  }
+  .destination-content.active{
+    display:block;
+  }
+
+  /* Restaurant/Hotel/Attraction Cards */
+  .item-card{
+    background:var(--card);
+    border:1px solid var(--card-b);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:12px;
+  }
+  .item-card-header{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+  }
+  .item-card input[type=text]{
+    background:none; border:none; color:var(--paper);
+    font-size:14px; outline:none; font-family:'Rubik',sans-serif;
+    flex:1; margin-right:10px;
+  }
+  .item-card input[type=text]::placeholder{
+    color:var(--dim);
+  }
+  .item-card textarea{
+    width:100%; background:rgba(0,0,0,0.15); border:1px solid var(--card-b);
+    border-radius:6px; color:var(--paper); font-family:'Rubik',sans-serif;
+    font-size:13px; padding:8px 10px; resize:vertical; min-height:60px;
+    outline:none; margin-bottom:10px;
+  }
+  .item-card textarea:focus{
+    border-color:var(--gold);
+  }
+
+  /* File Upload */
+  .file-upload-area{
+    border:2px dashed var(--card-b); border-radius:8px; padding:12px;
+    background:rgba(0,0,0,0.1); margin-bottom:10px; text-align:center;
+    cursor:pointer; transition:.2s;
+  }
+  .file-upload-area:hover{
+    border-color:var(--gold); background:rgba(201,162,39,0.05);
+  }
+  .file-upload-area input[type=file]{
+    display:none;
+  }
+  .file-upload-label{
+    cursor:pointer; color:var(--dim); font-size:13px;
+    display:block;
+  }
+  .file-upload-label:hover{color:var(--gold);}
+  .file-actions{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:9px;}
+  .file-pick-btn{border:1px solid var(--card-b);background:rgba(255,255,255,.65);color:var(--paper);border-radius:8px;padding:8px 10px;font:500 12px 'Rubik',sans-serif;cursor:pointer;}
+  .file-pick-btn:hover{border-color:var(--gold);color:var(--gold);}
+  .file-upload-area input[type=file]{display:none;}
+
+  .uploaded-files{
+    display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;
+  }
+  .file-badge{
+    background:rgba(201,162,39,0.2); border:1px solid rgba(201,162,39,0.5);
+    border-radius:6px; padding:6px 10px; font-size:12px; color:var(--gold);
+    display:flex; align-items:center; gap:6px;
+  }
+  .file-badge button{
+    background:none; border:none; color:var(--gold); cursor:pointer;
+    font-size:12px; padding:0;
+  }
+  .file-badge button:hover{
+    color:var(--danger);
+  }
+
+  /* Budget */
+  .budget-summary{
+    display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap;
+  }
+  .sum-card{
+    flex:1; min-width:140px;
+    background:var(--card); border:1px solid var(--card-b); border-radius:var(--radius);
+    padding:16px;
+  }
+  .sum-card .label{ font-size:11px; color:var(--dim); letter-spacing:.08em; text-transform:uppercase; }
+  .sum-card .value{ font-family:'David Libre',serif; font-size:26px; font-weight:700; margin-top:4px; }
+  .sum-card.jp .value{ color:var(--sakura); }
+  .sum-card.th .value{ color:var(--gold); }
+
+  .expense-row{
+    display:flex; align-items:center; gap:10px;
+    background:var(--card); border:1px solid var(--card-b);
+    border-radius:10px; padding:11px 12px; margin-bottom:8px;
+  }
+  .expense-row .cat-dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+  .expense-row input[type=text]{
+    flex:1; min-width:0; background:none; border:none; color:var(--paper);
+    font-size:14px; outline:none; font-family:'Rubik',sans-serif;
+  }
+  .expense-row input[type=number]{
+    width:78px; background:none; border:none; color:var(--paper);
+    font-size:14px; text-align:left; outline:none; font-family:'Rubik',sans-serif;
+  }
+  .expense-row select{
+    background:rgba(0,0,0,0.2); border:1px solid var(--card-b); color:var(--dim);
+    font-size:12px; border-radius:6px; padding:5px 6px; outline:none;
+  }
+  .expense-row .del{ background:none; border:none; color:var(--dim); cursor:pointer; font-size:14px; flex:none; }
+  .expense-row .del:hover{ color:var(--danger); }
+
+  .cat-legend{ display:flex; gap:14px; flex-wrap:wrap; margin:10px 0 18px; font-size:12px; color:var(--dim); }
+  .cat-legend span{ display:flex; align-items:center; gap:5px; }
+  .cat-legend .cat-dot{ width:8px; height:8px; border-radius:50%; }
+
+  .converter-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .converter-grid select,.converter-grid input{width:100%;padding:11px;border:1px solid var(--card-b);border-radius:9px;background:#fff;color:var(--paper);font:14px 'Rubik',sans-serif;}
+  .convert-result{margin-top:14px;padding:16px;border-radius:10px;background:#eaf8fc;border:1px solid var(--card-b);font-family:'David Libre',serif;font-size:26px;font-weight:700;text-align:center;color:#237a98;}
+  @media(max-width:520px){.converter-grid{grid-template-columns:1fr}.file-pick-btn{flex:1;min-width:90px}}
+
+  /* Lists */
+  .list-block{
+    background:var(--card); border:1px solid var(--card-b); border-radius:var(--radius);
+    padding:16px 16px 12px; margin-bottom:16px;
+  }
+  .list-block h3{
+    font-family:'David Libre',serif; font-size:18px; margin:0 0 10px; font-weight:700;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .list-item{
+    display:flex; align-items:center; gap:10px; padding:8px 2px;
+    border-bottom:1px solid var(--card-b);
+  }
+  .list-item:last-child{ border-bottom:none; }
+  .list-item input[type=checkbox]{
+    width:18px; height:18px; accent-color:var(--gold); flex:none; cursor:pointer;
+  }
+  .list-item input[type=text]{
+    flex:1; background:none; border:none; color:var(--paper); font-size:14px; outline:none;
+    font-family:'Rubik',sans-serif;
+  }
+  .list-item.done input[type=text]{ color:var(--dim); text-decoration:line-through; }
+  .list-item .del{ background:none; border:none; color:var(--dim); cursor:pointer; font-size:13px; }
+  .list-item .del:hover{ color:var(--danger); }
+  .add-item-btn{
+    background:none; border:none; color:var(--dim); font-size:13px; cursor:pointer;
+    padding:8px 2px; width:100%; text-align:right;
+  }
+
+  .empty-hint{
+    color:var(--dim); font-size:13px; padding:12px 0; text-align:center;
+  }
+
+  nav{
+    position:fixed; bottom:0; left:0; right:0; z-index:1000;
+    background:rgba(14,20,32,0.97); border-top:1px solid var(--card-b);
+    display:flex; align-items:stretch; gap:6px;
+    overflow-x:auto; overflow-y:hidden;
+    padding:6px max(8px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    overscroll-behavior-x:contain;
+    backdrop-filter:blur(12px);
+  }
+  nav::-webkit-scrollbar{display:none}
+  nav button{
+    appearance:none; -webkit-appearance:none;
+    background:none; border:none; color:var(--dim); cursor:pointer;
+    padding:9px 12px; font-size:11px; font-weight:500; transition:.2s;
+    flex:0 0 auto; min-width:76px; white-space:nowrap;
+    border-radius:10px; touch-action:manipulation;
+  }
+  nav button:hover{ color:var(--gold); }
+  nav button.active{ color:var(--gold); background:rgba(255,255,255,.06); border-bottom:2px solid var(--gold); }
+  /* Accessible bottom navigation */
+  nav{gap:6px;padding:8px max(10px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom));overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;justify-content:flex-start;-webkit-overflow-scrolling:touch;}
+  nav button{min-width:82px;min-height:48px;padding:8px 10px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(255,255,255,.04);font-size:12px;line-height:1.2;white-space:nowrap;flex:0 0 auto;scroll-snap-align:center;}
+  nav button.active{border:1px solid var(--gold);border-bottom:1px solid var(--gold);background:rgba(218,184,91,.14);color:var(--gold);font-weight:700;}
+  nav button:focus-visible{outline:3px solid rgba(218,184,91,.55);outline-offset:2px;}
+
+  .destination-tabs{
+    display:flex; gap:8px; overflow-x:auto; overflow-y:hidden; padding:3px 2px 8px;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .destination-tabs::-webkit-scrollbar{display:none}
+  .dest-tab{flex:0 0 auto; white-space:nowrap; min-height:38px; padding:8px 13px;}
+  @media(max-width:600px){
+    main{padding:0 12px 100px;}
+    nav{gap:5px;} nav button{min-width:78px; padding:9px 11px; font-size:11px;}
+    .destination-tabs{margin-inline:-4px;}
+    .flight-section,.tools-card{padding:14px;}
+  }
+
+  .city-select{width:100%;padding:8px 10px;border:1px solid var(--card-b);border-radius:9px;background:#fff;color:var(--paper);font-family:'Rubik',sans-serif;font-size:13px;}
+  .flight-section,.tools-card{background:var(--card);border:1px solid var(--card-b);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+  .flight-section h3,.tools-card h3{margin:0 0 10px;font-family:'David Libre',serif;font-size:22px;}
+  .flight-section small,.tools-card small{color:var(--dim);}
+  .doc-list{display:flex;flex-direction:column;gap:8px;margin:12px 0;}
+  .doc-item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--card-b);border-radius:9px;background:#fafcfd;}
+  .doc-item a{flex:1;color:var(--paper);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;}
+  .doc-item .doc-size{font-size:11px;color:var(--dim);}
+  .doc-upload{display:flex;gap:8px;flex-wrap:wrap;}
+  .tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .tool-btn{border:1px solid var(--card-b);border-radius:10px;background:#fff;padding:13px 10px;color:var(--paper);cursor:pointer;font-family:'Rubik',sans-serif;}
+  .weather-result{margin-top:12px;padding:12px;border-radius:12px;background:var(--bg2);font-size:13px;}
+  .weather-grid,.clock-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+  .weather-card,.clock-card{background:#fff;border:1px solid var(--card-b);border-radius:12px;padding:12px;text-align:center;}
+  .weather-card .country,.clock-card .country{font-weight:700;margin-bottom:6px;}
+  .weather-card .temp{font-size:22px;font-weight:700;margin:6px 0;}
+  .clock-card .time{font-size:24px;font-weight:700;direction:ltr;margin:6px 0;}
+  .clock-card .date{font-size:11px;color:var(--dim);}
+  @media(max-width:600px){.weather-grid,.clock-grid{grid-template-columns:1fr;}}
+
+
+  /* ---------- Dashboard ---------- */
+  .dashboard-hero{background:linear-gradient(135deg,#ffffff 0%,#eaf8fc 100%);border:1px solid var(--card-b);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 8px 24px rgba(23,55,70,.06)}
+  .dash-kicker{font-size:12px;color:var(--gold);font-weight:600;margin-bottom:6px}
+  .dash-title{font:700 28px 'David Libre',serif;margin:0 0 4px}
+  .dash-sub{font-size:13px;color:var(--dim);margin-bottom:16px}
+  .dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .dash-card{background:#fff;border:1px solid var(--card-b);border-radius:14px;padding:14px;min-height:104px;cursor:pointer;transition:.2s}
+  .dash-card:hover{transform:translateY(-1px);border-color:rgba(44,145,181,.45)}
+  .dash-icon{font-size:22px;margin-bottom:8px}.dash-label{font-size:12px;color:var(--dim)}.dash-value{font-size:17px;font-weight:600;margin-top:3px}.dash-note{font-size:11px;color:var(--dim);margin-top:4px;line-height:1.4}
+  .dash-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.dash-action{border:1px solid var(--card-b);background:#fff;border-radius:10px;padding:11px 7px;font:500 12px 'Rubik';cursor:pointer;color:var(--paper)}
+  .dashboard-hero{position:relative;overflow:hidden;background:linear-gradient(145deg,#ffffff 0%,#eefaff 58%,#fff4f7 100%);padding:22px;box-shadow:0 14px 34px rgba(23,55,70,.09)}
+  .dashboard-hero:before{content:'✈';position:absolute;left:-8px;top:-18px;font-size:115px;opacity:.045;transform:rotate(-12deg);pointer-events:none}
+  .dashboard-topline{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;position:relative;z-index:1}
+  .dash-kicker{display:inline-flex;align-items:center;gap:6px;background:rgba(44,145,181,.09);padding:6px 9px;border-radius:99px}
+  .dash-title{font-size:32px;letter-spacing:-.02em}
+  .dash-sub{font-size:13px;line-height:1.55;max-width:560px}
+  .dash-mini-badge{background:rgba(255,255,255,.82);border:1px solid var(--card-b);border-radius:12px;padding:8px 10px;text-align:center;min-width:76px;box-shadow:0 5px 16px rgba(23,55,70,.05)}
+  .dash-mini-badge b{display:block;font-size:18px}.dash-mini-badge span{font-size:10px;color:var(--dim)}
+  .dash-route{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 2px}.dash-chip{font-size:11px;border:1px solid var(--card-b);background:rgba(255,255,255,.76);padding:6px 9px;border-radius:99px;color:var(--dim)}
+  .dash-chip.current{color:var(--gold);border-color:rgba(44,145,181,.35);font-weight:600}
+  .dash-grid{grid-template-columns:repeat(2,1fr);position:relative;z-index:1}
+  .dash-card{min-height:118px;display:flex;flex-direction:column;justify-content:flex-start}.dash-card .dash-note{margin-top:auto}
+  .dash-card[data-go]{cursor:pointer}.dash-card:active{transform:scale(.985)}
+  .dash-icon{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#f4fafc;margin-bottom:10px;font-size:20px}
+  .dash-value{font-size:18px}.dash-label{font-size:11px;letter-spacing:.02em}
+  .dash-actions{position:relative;z-index:1}.dash-action{padding:12px 7px;background:rgba(255,255,255,.84);transition:.2s}.dash-action:hover{transform:translateY(-1px);border-color:rgba(44,145,181,.35)}
+  .dashboard-section-label{font-size:11px;color:var(--dim);margin:16px 2px 7px;font-weight:600}
+  .dash-empty{padding:12px;border:1px dashed var(--card-b);border-radius:12px;color:var(--dim);font-size:12px;text-align:center;margin-top:10px}
+  @media(max-width:420px){.dashboard-topline{align-items:center}.dash-mini-badge{min-width:68px}.dash-title{font-size:29px}.dashboard-hero{padding:18px}.dash-grid{grid-template-columns:1fr}}
+  .progress-wrap{margin-top:15px}.progress-head{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:6px}.progress{height:8px;background:#e8f1f4;border-radius:99px;overflow:hidden}.progress>span{display:block;height:100%;background:var(--gold);border-radius:99px}
+  .flight-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:10px 0 12px}.flight-meta input{width:100%;padding:9px;border:1px solid var(--card-b);border-radius:8px;background:#fff;color:var(--paper);font-family:'Rubik'}
+  .flight-meta .wide{grid-column:1/-1}
+  .flight-meta select{width:100%;padding:9px;border:1px solid var(--card-b);border-radius:8px;background:#fff;color:var(--paper);font-family:'Rubik'}
+  .today-card,.checklist-card,.countdown-card{background:var(--card);border:1px solid var(--card-b);border-radius:14px;padding:14px;margin-bottom:12px}
+  .today-card h3,.checklist-card h3,.countdown-card h3{margin:0 0 10px;font-family:'David Libre',serif;font-size:21px}
+  .today-item{padding:10px;border:1px solid var(--card-b);border-radius:10px;background:#fff;margin-top:8px}
+  .today-time{font-weight:700;font-size:13px}.today-muted{color:var(--dim);font-size:12px}
+  .checklist-row{display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid #edf2f4;min-height:48px}
+  .checklist-row:last-child{border-bottom:0}
+  .checklist-row.done .checklist-text{text-decoration:line-through;color:var(--dim)}
+  .checklist-check{width:26px;height:26px;min-width:26px;accent-color:var(--teal);cursor:pointer;touch-action:manipulation}
+  .checklist-text{width:100%;border:0;background:transparent;color:var(--paper);font:400 14px 'Rubik';padding:7px 4px;outline:none;border-radius:7px}
+  .checklist-text:focus{background:#f4fafc;box-shadow:0 0 0 2px rgba(44,145,181,.16)}
+  .checklist-empty{color:var(--dim);font-size:12px;padding:8px 0}
+  .checklist-progress{font-size:12px;color:var(--dim);margin:-3px 0 9px}
+  .checklist-progress-bar{height:7px;background:#e8f1f4;border-radius:99px;overflow:hidden;margin-bottom:8px}
+  .checklist-progress-bar span{display:block;height:100%;background:var(--teal);border-radius:99px;transition:width .25s ease}
+  .checklist-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .checklist-catalog{margin-top:12px;padding-top:12px;border-top:1px solid var(--card-b)}
+  .checklist-catalog-title{font-size:12px;color:var(--dim);margin-bottom:8px}
+  .checklist-catalog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .checklist-catalog-item{border:1px solid var(--card-b);background:#f9fdff;border-radius:10px;padding:9px;text-align:right;cursor:pointer;font:400 13px 'Rubik';color:var(--paper)}
+  .checklist-catalog-item:active{transform:scale(.98)}
+  .checklist-catalog-item.added{opacity:.55;cursor:default}
+  .reset-link{border:0;background:none;color:var(--gold);font:400 12px 'Rubik';cursor:pointer;text-decoration:underline;margin-top:9px}
+  .reset-code-box{display:none;margin-top:10px;text-align:right;padding:10px;border:1px solid var(--card-b);border-radius:10px;background:#f9fdff}
+  .reset-code-box input{margin:5px 0;width:100%}
+  @media(max-width:420px){.checklist-catalog-grid{grid-template-columns:1fr}}
+
+  .checklist-add{display:flex;gap:8px;width:100%;margin-top:12px}.checklist-add .add-btn{width:auto;flex:0 0 auto;margin:0;min-width:92px;padding:12px 16px;background:var(--gold);color:#161210;border-style:solid;font-weight:600;touch-action:manipulation}.checklist-add .add-btn:hover{background:#e8c86b;color:#161210}.checklist-add .add-btn:active{transform:scale(.98)}
+  .checklist-add input{flex:1;min-width:0;padding:10px;border:1px solid var(--card-b);border-radius:9px;font-family:'Rubik';font-size:14px}
+  .countdown-number{font-size:42px;font-weight:800;line-height:1;margin:4px 0}.countdown-label{color:var(--dim);font-size:12px}
+  .doc-count{font-size:11px;color:var(--dim);margin-top:4px}
+  @media(max-width:420px){.tool-grid{grid-template-columns:1fr}.dash-grid{grid-template-columns:1fr}.dash-actions{grid-template-columns:1fr}.flight-meta{grid-template-columns:1fr}.flight-meta .wide{grid-column:auto}}
+
+
+  .catalog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.catalog-item{border:1px solid var(--card-b);background:#fff;border-radius:12px;padding:10px;text-align:right;cursor:pointer}.catalog-item small{display:block;color:var(--dim);margin-top:4px}.trip-manager{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding:10px;background:rgba(255,255,255,.7);border:1px solid var(--card-b);border-radius:12px;font-size:12px}.trip-manager select{min-width:150px;flex:1}.trip-manager .danger{background:#fff0f0;color:#b42318;border-color:#f0b7b7}.trip-manager .lock-btn{background:#fff7e6;border-color:#ead39a}.maps-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.maps-item{border:1px solid var(--card-b);background:#fff;border-radius:12px;padding:10px;text-align:right;text-decoration:none;color:var(--paper);display:block}.maps-item small{display:block;color:var(--dim);margin-top:4px}.maps-search{display:flex;gap:8px;margin-top:10px}.maps-search input{flex:1;border:1px solid var(--card-b);border-radius:9px;padding:9px;font-family:Rubik}.lock-overlay{position:fixed;inset:0;background:rgba(23,55,70,.48);backdrop-filter:blur(7px);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}.lock-card{max-width:390px;width:100%;background:#fff;border:1px solid var(--card-b);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(23,55,70,.2);text-align:center}.lock-card input{width:100%;padding:11px;border:1px solid var(--card-b);border-radius:9px;margin:10px 0;font-size:16px;text-align:center}.lock-card .lock-error{color:#b42318;font-size:12px;min-height:18px}.ferry-card,.passport-card,.activity-card{background:var(--card);border:1px solid var(--card-b);border-radius:14px;padding:14px;margin-top:10px}.ferry-grid,.passport-grid,.activity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.activity-grid{grid-template-columns:90px 1fr 130px auto}.activity-card textarea{min-height:60px}.section-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.mini-summary{font-size:12px;color:var(--dim);margin:8px 0}.check-btn{border:1px solid var(--card-b);background:#fff;border-radius:9px;padding:7px 10px;cursor:pointer}@media(max-width:600px){.ferry-grid,.passport-grid,.activity-grid{grid-template-columns:1fr}.activity-grid{display:grid}}
+.trip-date-picker-btn{border:0;background:rgba(255,255,255,.72);color:var(--paper);font:500 11px 'Rubik';padding:6px 10px;border-radius:999px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.05)}.trip-date-picker-btn:hover{background:#fff}.trip-date-picker-btn:active{transform:scale(.98)}
+
+  /* New-trip picker: hidden until the "טיול חדש" button is pressed */
+  .trip-create-modal{display:none;position:fixed;inset:0;z-index:10000;background:rgba(12,25,34,.48);backdrop-filter:blur(5px);align-items:center;justify-content:center;padding:16px;}
+  .trip-create-card{width:min(720px,100%);max-height:min(88vh,760px);overflow:auto;background:#fff;border:1px solid var(--card-b);border-radius:22px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.22);direction:rtl;}
+  .trip-create-card h2{margin:0 0 8px;font-family:'David Libre',serif;font-size:25px;}
+  .trip-create-card .helper{font-size:13px;color:var(--dim);line-height:1.6;margin-bottom:14px;}
+  .trip-name-input,.trip-search,.custom-destination-row input{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid var(--card-b);border-radius:12px;background:#fff;color:var(--paper);font:14px 'Rubik',sans-serif;}
+  .trip-search{margin-top:9px;}
+  .selected-destinations{display:flex;flex-wrap:wrap;gap:7px;min-height:42px;align-items:center;padding:9px 0;}
+  .selected-destinations .chip{display:inline-flex;align-items:center;gap:5px;background:#eef8fa;border:1px solid #cfe5e8;border-radius:999px;padding:7px 10px;font-size:12px;}
+  .selected-destinations .chip button{border:0;background:none;cursor:pointer;font-size:17px;line-height:1;padding:0 2px;color:var(--dim);}
+  .destination-picker-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-height:330px;overflow:auto;padding:2px;}
+  .destination-choice{appearance:none;border:1px solid var(--card-b);background:#fff;border-radius:14px;padding:12px;text-align:right;cursor:pointer;min-height:70px;touch-action:manipulation;transition:.15s;}
+  .destination-choice:hover{border-color:#9ecbd2;background:#f7fcfd;}
+  .destination-choice.selected{border-color:var(--gold);background:#fff9e8;box-shadow:0 0 0 2px rgba(218,184,91,.15);}
+  .destination-choice strong{display:block;font-size:14px;}
+  .destination-choice small{display:block;color:var(--dim);margin-top:5px;font-size:11px;}
+  .custom-destination-row{display:flex;gap:8px;margin-top:10px;}
+  .custom-destination-row input{flex:1;}
+  .trip-create-actions{display:flex;gap:9px;margin-top:16px;position:sticky;bottom:-20px;background:#fff;padding-top:10px;}
+  .trip-create-actions button{flex:1;min-height:46px;}
+  @media(max-width:600px){.destination-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr));max-height:280px}.trip-create-card{padding:16px;border-radius:18px}.trip-create-modal{padding:10px}.custom-destination-row{flex-direction:column}.custom-destination-row button{min-height:44px}}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="trip-manager"><label>🪄 טיול:</label><select id="tripSelect"></select><button id="duplicateTripBtn" class="export-btn">🪄 שכפול טיול</button><button id="newTripBtn" class="export-btn">＋ טיול חדש</button><button id="deleteTripBtn" class="export-btn danger">🗑️ מחק טיול</button><button id="lockTripBtn" class="export-btn lock-btn">🔒 קוד נעילה</button></div>
+  <div class="top-actions">
+    <button id="saveBtn" class="save-btn">💾 שמירה</button>
+    <button id="exportBtn" class="export-btn">⬇️ גיבוי</button>
+    <button id="refreshPageBtn" class="export-btn" type="button">🔄 רענון</button><button id="installBtn" class="export-btn" style="display:none">📱 התקנה</button>
+  </div>
+  <div class="eyebrow">🌏 מסע אפיק</div>
+  <h1>יומן מסע</h1>
+  <div class="route-line">
+    <span class="dot jp"></span>
+    <span class="track"></span>
+    <span class="dot th"></span>
+    <button id="tripDateRange" type="button" class="trip-date-picker-btn">הוסיפי תאריכים לטיול</button>
+  </div>
+</header>
+
+<div id="lockOverlay" class="lock-overlay"><div class="lock-card"><div style="font-size:30px">🔒</div><h2 id="lockTitle" style="margin:8px 0 4px">טיול נעול</h2><div id="lockSubtitle" class="mini-summary">הזיני את קוד הנעילה כדי לצפות בטיול.</div><input id="lockInput" type="password" inputmode="numeric" autocomplete="off" placeholder="קוד נעילה"><button id="lockSubmit" class="save-btn" style="width:100%">פתיחה</button><div id="lockError" class="lock-error"></div></div></div>
+
+<div id="tripDateModal" class="modal-overlay" style="display:none;align-items:center;justify-content:center;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;padding:18px;">
+  <div class="modal-card" style="background:#fff;border-radius:22px;padding:22px;width:min(420px,100%);box-shadow:0 20px 60px rgba(0,0,0,.2);">
+    <h2 style="margin:0 0 8px">📅 תאריכי הטיול</h2>
+    <div class="mini-summary" style="margin-bottom:16px">בחרי מתאריך ועד תאריך</div>
+    <label style="display:block;margin:10px 0 6px">מתאריך</label>
+    <input id="tripStartDate" type="date" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #ddd;border-radius:12px;font-size:16px;">
+    <label style="display:block;margin:14px 0 6px">עד תאריך</label>
+    <input id="tripEndDate" type="date" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #ddd;border-radius:12px;font-size:16px;">
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button id="cancelTripDateRange" type="button" class="export-btn" style="flex:1">ביטול</button>
+      <button id="saveTripDateRange" type="button" class="save-btn" style="flex:1">שמירת תאריכים</button>
+    </div>
+  </div>
+</div>
+
+<div id="tripCreateModal" class="trip-create-modal" aria-hidden="true">
+  <div class="trip-create-card" role="dialog" aria-modal="true" aria-labelledby="tripCreateTitle">
+    <h2 id="tripCreateTitle">✨ טיול חדש</h2>
+    <div class="helper">תני לטיול שם, ואז בחרי את היעדים לפי הסדר שבו תבקרי בהם. חפשי עיר במאגר העולמי או הוסיפי עיר משלך. המזג אוויר והשעות יתעדכנו אוטומטית לפי הערים שבחרת.</div>
+    <input id="newTripNameInput" class="trip-name-input" type="text" placeholder="שם הטיול, למשל: תאילנד ויפן" autocomplete="off">
+    <input id="destinationSearchInput" class="trip-search" type="search" placeholder="🔎 חיפוש יעד או מדינה…" autocomplete="off">
+    <div id="selectedDestinations" class="selected-destinations"><span class="mini-summary">עדיין לא נבחרו יעדים</span></div>
+    <div id="destinationPickerGrid" class="destination-picker-grid"></div>
+    <div class="custom-destination-row">
+      <input id="customDestinationInput" type="text" placeholder="עיר שלא במאגר…">
+      <button id="addCustomDestinationBtn" type="button" class="export-btn">＋ הוספה</button>
+    </div>
+    <div class="trip-create-actions">
+      <button id="cancelNewTripBtn" type="button" class="export-btn">ביטול</button>
+      <button id="createNewTripBtn" type="button" class="save-btn">יצירת הטיול</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- Home Dashboard -->
+  <div id="view-home" class="view active">
+    <div class="dashboard-hero">
+      <div class="dashboard-topline">
+        <div>
+          <div class="dash-kicker">🌏 מרכז השליטה של הטיול</div>
+          <h2 class="dash-title">יומן מסע</h2>
+          <div class="dash-sub" id="dashGreeting">הטיול שלך במקום אחד</div>
+        </div>
+        <div class="dash-mini-badge"><b id="dashCountdownMini">—</b><span>ימים לטיול</span></div>
+      </div>
+      <div class="dash-route" id="dashRoute"></div>
+      <div class="dashboard-section-label">מה חשוב לדעת עכשיו</div>
+      <div class="dash-grid" id="dashboardGrid"></div>
+      <div class="progress-wrap" id="tripProgressWrap"></div>
+      <div class="dash-actions">
+        <button class="dash-action" id="dashMapBtn">🗺️ המסלול שלי</button>
+        <button class="dash-action" id="dashWeatherBtn">🌤️ מזג אוויר</button>
+        <button class="dash-action" id="dashFlightsBtn">📎 המסמכים</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today View -->
+  <div id="view-today" class="view">
+    <div id="todayContent"></div>
+  </div>
+
+  <!-- Itinerary View -->
+  <div id="view-itinerary" class="view">
+    <div id="daysList"></div>
+    <button id="addDayBtn" class="add-btn">+ הוסף יום חדש</button>
+  </div>
+
+  <!-- Restaurants View -->
+  <div id="view-restaurants" class="view">
+    <div class="destination-tabs" id="restaurantTabs"></div>
+    <div id="restaurantContent"></div>
+    <button id="addRestaurantBtn" class="add-btn">+ הוסף מסעדה</button>
+  </div>
+
+  <!-- Hotels View -->
+  <div id="view-hotels" class="view">
+    <div class="destination-tabs" id="hotelTabs"></div>
+    <div id="hotelContent"></div>
+    <button id="addHotelBtn" class="add-btn">+ הוסף מלון</button>
+  </div>
+
+  <!-- Attractions View -->
+  <div id="view-attractions" class="view">
+    <div class="destination-tabs" id="attractionTabs"></div>
+    <div id="attractionContent"></div>
+    <button id="addAttractionBtn" class="add-btn">+ הוסף אטרקציה</button>
+  </div>
+
+  <!-- Budget View -->
+  <div id="view-budget" class="view">
+    <div id="budgetSummary" class="budget-summary"></div>
+    <div id="catLegend" class="cat-legend"></div>
+    <div id="expenseList"></div>
+    <button id="addExpenseBtn" class="add-btn">+ הוסף הוצאה</button>
+  </div>
+
+  <!-- Currency Conversion View -->
+  <div id="view-converter" class="view">
+    <div class="item-card">
+      <h3 style="margin:0 0 12px;font-family:'David Libre',serif;font-size:20px">💱 המרה לשקל</h3>
+      <div class="converter-grid">
+        <select id="convertCurrency"><option value="USD">$ דולר (USD)</option><option value="EUR">€ אירו (EUR)</option><option value="GBP">£ ליש״ט (GBP)</option><option value="ILS">₪ שקל (ILS)</option><option value="THB">฿ באט תאילנדי (THB)</option><option value="JPY">¥ ין יפני (JPY)</option></select>
+        <input id="convertAmount" type="number" inputmode="decimal" placeholder="סכום">
+      </div>
+      <div id="convertResult" class="convert-result">הזיני סכום כדי להמיר</div>
+      <button id="refreshRatesBtn" class="add-btn" style="margin-top:10px">🔄 עדכון שערים</button>
+      <div id="ratesUpdated" class="empty-hint"></div>
+    </div>
+  </div>
+
+  <!-- Flights & Documents View -->
+  <div id="view-flights" class="view">
+    <div class="flight-section">
+      <h3>✈️ מסמכי טיסות</h3>
+      <small>כל המסמכים נשמרים במכשיר בתוך האפליקציה.</small>
+    </div>
+    <div id="flightDocuments"></div><div id="ferrySection" class="flight-section"></div><div id="passportSection" class="flight-section"></div>
+  </div>
+
+  <!-- Ferries View -->
+  <div id="view-ferries" class="view">
+    <div id="ferrySectionDedicated" class="flight-section"></div>
+  </div>
+
+  <!-- Passport View -->
+  <div id="view-passport" class="view">
+    <div id="passportSectionDedicated" class="flight-section"></div>
+  </div>
+
+  <!-- Settings / Data Transfer View -->
+  <div id="view-settings" class="view">
+    <div class="tools-card">
+      <h3>⚙️ הגדרות</h3>
+      <small>כאן אפשר להעביר את כל המידע של יומן המסע למכשיר אחר ולייבא אותו בחזרה.</small>
+    </div>
+    <div class="tools-card">
+      <h3>📦 העברת מידע</h3>
+      <small>ייצוא יוצר קובץ עם המידע ששמרת ביומן. אפשר לשלוח אותו למי שתבחרי ולייבא אותו במכשיר אחר.</small>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="tool-btn" id="shareBackupBtn">📤 העברת מידע</button>
+        <button class="tool-btn" id="importBackupBtn">📥 ייבוא מידע</button>
+        <input id="importBackupInput" type="file" accept=".json,application/json" style="display:none">
+      </div>
+    </div>
+  </div>
+
+  <!-- Travel Tools View -->
+  <div id="view-tools" class="view">
+    <div class="tools-card">
+      <h3>🧭 כלי טיול</h3>
+      <div class="tool-grid">
+        <button class="tool-btn" id="openMapBtn">🗺️ המסלול שלי במפה</button>
+        <button class="tool-btn" id="weatherBtn">🌤️ מזג אוויר</button>
+        <button class="tool-btn" id="worldClockBtn">🕐 שעות במדינות</button>
+        <button class="tool-btn" id="notifyBtn">🔔 התראות</button>
+      </div>
+      <div id="weatherResult" class="weather-result" style="display:none"></div>
+      <div id="worldClockResult" class="weather-result" style="display:none"></div>
+    </div>
+  </div>
+</main>
+
+<nav>
+  <button data-view="home" class="active">🏠 בית</button>
+  <button data-view="today">📍 היום שלי</button>
+  <button data-view="itinerary">📅 תכנון</button>
+  <button data-view="restaurants">🍜 מסעדות</button>
+  <button data-view="hotels">🏨 מלונות</button>
+  <button data-view="attractions">🎫 אטרקציות</button>
+  <button data-view="budget">💰 תקציב</button>
+  <button data-view="converter">💱 המרה</button>
+  <button data-view="flights">✈️ טיסות</button>
+  <button data-view="ferries">⛴️ מעבורות</button>
+  <button data-view="passport">🪪 דרכון</button>
+  <button data-view="tools">🧭 מפות וכלים</button>
+  <button data-view="settings">⚙️ הגדרות</button>
+</nav>
+
+<script>
+
+  /* ---------- Today / Checklist / Countdown ---------- */
+  function countdownTarget(){
+    if(state.countdownDate) return state.countdownDate;
+    const dates=[];
+    Object.values(state.flightInfo||{}).forEach(f=>Array.isArray(f)?f.forEach(x=>x?.date&&dates.push(x.date)):f?.date&&dates.push(f.date));
+    (state.days||[]).forEach(d=>d?.date&&dates.push(d.date));
+    return dates.sort()[0]||'';
+  }
+  function daysUntil(date){
+    if(!date)return null;
+    const a=new Date(); a.setHours(0,0,0,0); const b=new Date(date+'T00:00:00');
+    return Math.ceil((b-a)/86400000);
+  }
+  function renderToday(){
+    const box=document.getElementById('todayContent'); if(!box)return;
+    const today=localDateISO('Asia/Jerusalem');
+    const days=(state.days||[]).filter(d=>d.date===today);
+    const flights=[];
+    Object.entries(state.flightInfo||{}).forEach(([type,f])=>{
+      const arr=Array.isArray(f)?f:[f]; arr.forEach((x,i)=>{if(x?.date===today) flights.push({...x,type:type==='domestic'?`טיסת פנים ${i+1}`:type==='elal'?'אל על':'טיסת מעבר'});});
+    });
+    let html=`<div class="today-card"><h3>📍 היום שלי · ${formatDateHe(today)}</h3>`;
+    if(!days.length&&!flights.length) html+='<div class="today-muted">אין כרגע פריטים שתוכננו להיום.</div>';
+    flights.forEach(f=>html+=`<div class="today-item"><div class="today-time">✈️ ${escapeHtml(f.type)} · ${escapeHtml(f.number||'מספר טיסה לא הוגדר')}</div><div>${escapeHtml(f.route||'מסלול לא הוגדר')}</div><div class="today-muted">${escapeHtml(f.airline||'')} ${f.terminal?`· טרמינל ${escapeHtml(f.terminal)}`:''} ${f.status?`· ${escapeHtml(f.status)}`:''}</div></div>`);
+    days.forEach(d=>{
+      html+=`<div class="today-item"><div class="today-time">📅 ${escapeHtml(d.title||d.city||'יום טיול')}</div><div class="today-muted">${escapeHtml(d.city||'')}</div>`;
+      (d.activities||[]).forEach(a=>html+=`<div style="margin-top:7px">${a.time?`<b>${escapeHtml(a.time)}</b> · `:''}${escapeHtml(a.title||'פעילות')} ${a.done?'✓':''}</div>`);
+      if(d.notes)html+=`<div class="today-muted" style="margin-top:7px">📝 ${escapeHtml(d.notes)}</div>`; html+='</div>';
+    }); html+='</div>';
+    box.innerHTML=html+renderChecklistCard()+renderCountdownCard();
+    bindChecklist(); bindCountdown();
+  }
+
+  const PRETRIP_CHECKLIST_CATALOG = [
+    'דרכון בתוקף','ביטוח נסיעות','כרטיסי טיסה','הזמנות מלונות','ויזה / אישורי כניסה',
+    'המרת כסף / מזומן','כרטיס אשראי נוסף','eSIM / חבילת גלישה','מטען לטלפון','מתאם חשמל',
+    'תרופות וערכת עזרה ראשונה','צילום דרכון ומסמכים','רישיון נהיגה בינלאומי','מזוודה / תיק',
+    'בגדים מתאימים','נעלי הליכה','קרם הגנה','משקפי שמש','אוזניות','מנעול למזוודה'
+  ];
+  function renderChecklistCard(){
+    const items=Array.isArray(state.preTripChecklist)?state.preTripChecklist:[];
+    const done=items.filter(x=>x.done).length;
+    const pct=items.length?Math.round(done/items.length*100):0;
+    const exists=new Set(items.map(x=>String(x.text||'').trim()));
+    const catalog=PRETRIP_CHECKLIST_CATALOG.map((text,i)=>{
+      const added=exists.has(text);
+      return `<button class="checklist-catalog-item ${added?'added':''}" type="button" data-catalog-check="${i}" ${added?'disabled':''}>${added?'✓':'＋'} ${escapeHtml(text)}</button>`;
+    }).join('');
+    return `<div class="checklist-card">
+      <h3>✅ צ'ק־ליסט לפני הטיול</h3>
+      <div class="checklist-progress">${done} מתוך ${items.length} הושלמו · ${pct}%</div>
+      <div class="checklist-progress-bar"><span style="width:${pct}%"></span></div>
+      <div id="checklistRows">${items.length?items.map((x,i)=>`
+        <div class="checklist-row ${x.done?'done':''}" data-check-row="${i}">
+          <input class="checklist-check" type="checkbox" data-check="${i}" ${x.done?'checked':''} aria-label="סימון ${escapeAttr(x.text||'משימה')}">
+          <input class="checklist-text" type="text" data-check-text="${i}" value="${escapeAttr(x.text||'')}" placeholder="משימה">
+          <button class="icon-btn" type="button" data-del-check="${i}" aria-label="מחיקת משימה">✕</button>
+        </div>`).join(''):`<div class="checklist-empty">עדיין אין משימות. בחרי מהמאגר או הוסיפי משימה משלך ✨</div>`}</div>
+      <div class="checklist-add">
+        <input id="newChecklistItem" type="text" placeholder="הוסיפי משימה חדשה" autocomplete="off">
+        <button id="addChecklistItem" class="add-btn" type="button">＋ הוסף</button>
+      </div>
+      <div class="checklist-catalog">
+        <div class="checklist-catalog-title">📋 מאגר משימות נפוצות — לחיצה מוסיפה לצ'ק־ליסט</div>
+        <div class="checklist-catalog-grid">${catalog}</div>
+      </div>
+      <div class="checklist-tools">
+        <button id="clearCompletedChecklist" class="check-btn" type="button">נקה שהושלמו</button>
+      </div>
+    </div>`;
+  }
+  let checklistDelegatedBound=false;
+  function bindChecklist(){
+    // Event delegation keeps the controls working even after renderToday() rebuilds the card.
+    if(checklistDelegatedBound)return;
+    checklistDelegatedBound=true;
+    document.addEventListener('change',e=>{
+      const el=e.target.closest?.('[data-check]'); if(!el)return;
+      const i=Number(el.dataset.check);
+      if(!Number.isInteger(i)||!state.preTripChecklist?.[i])return;
+      state.preTripChecklist[i].done=!!el.checked; saveState(); renderToday();
+    });
+    document.addEventListener('input',e=>{
+      const el=e.target.closest?.('[data-check-text]'); if(!el)return;
+      const i=Number(el.dataset.checkText);
+      if(!Number.isInteger(i)||!state.preTripChecklist?.[i])return;
+      state.preTripChecklist[i].text=el.value; saveState();
+    });
+    document.addEventListener('click',e=>{
+      const catalog=e.target.closest?.('[data-catalog-check]');
+      if(catalog){
+        e.preventDefault();
+        const i=Number(catalog.dataset.catalogCheck), text=PRETRIP_CHECKLIST_CATALOG[i];
+        if(!text)return;
+        if(!Array.isArray(state.preTripChecklist))state.preTripChecklist=[];
+        if(!state.preTripChecklist.some(x=>String(x.text||'').trim()===text)){
+          state.preTripChecklist.push({id:uid(),text,done:false}); saveState(); renderToday();
+        }
+        return;
+      }
+      const del=e.target.closest?.('[data-del-check]');
+      if(del){e.preventDefault();const i=Number(del.dataset.delCheck);if(Number.isInteger(i)){state.preTripChecklist.splice(i,1);saveState();renderToday();}return;}
+      const add=e.target.closest?.('#addChecklistItem');
+      if(add){
+        e.preventDefault();
+        const input=document.getElementById('newChecklistItem'), t=input?.value.trim();
+        if(!t){input?.focus();return;}
+        if(!Array.isArray(state.preTripChecklist))state.preTripChecklist=[];
+        state.preTripChecklist.push({id:uid(),text:t,done:false});saveState();renderToday();
+        setTimeout(()=>document.getElementById('newChecklistItem')?.focus(),0);return;
+      }
+      const clear=e.target.closest?.('#clearCompletedChecklist');
+      if(clear){e.preventDefault();state.preTripChecklist=(state.preTripChecklist||[]).filter(x=>!x.done);saveState();renderToday();}
+    });
+    document.addEventListener('keydown',e=>{
+      if(e.key!=='Enter')return;
+      const el=e.target.closest?.('#newChecklistItem');if(!el)return;
+      e.preventDefault();document.getElementById('addChecklistItem')?.click();
+    });
+  }
+  function renderCountdownCard(){const target=countdownTarget(),n=daysUntil(target);return `<div class="countdown-card"><h3>⏳ ספירה לאחור</h3><div class="countdown-number">${n===null?'—':n<0?'הטיול התחיל!':n}</div><div class="countdown-label">${target?`ימים עד ${formatDateHe(target)}`:'הוסיפי תאריך טיסה או תאריך ליום הראשון'}</div><div class="section-actions"><input id="countdownDateInput" type="date" value="${escapeAttr(state.countdownDate||'')}" style="padding:9px;border:1px solid var(--card-b);border-radius:9px"><button id="saveCountdownDate" class="check-btn">שמור תאריך יעד</button><button id="clearCountdownDate" class="check-btn">אוטומטי</button></div></div>`;}
+  function bindCountdown(){document.getElementById('saveCountdownDate')?.addEventListener('click',()=>{state.countdownDate=document.getElementById('countdownDateInput').value;saveState();renderToday();});document.getElementById('clearCountdownDate')?.addEventListener('click',()=>{state.countdownDate='';saveState();renderToday();});}
+
+  const STORAGE_KEY = 'trip-planner-state';
+  const DESTINATIONS = {};
+  const ALL_DESTINATIONS = [];
+  function tripDestinations(){
+    // Each trip owns its own destination list. Normalize aliases first so
+    // variants such as 'קו פיפי' and 'קו פי פי' can never render twice.
+    const out=[]; const seen=new Set();
+    for(const raw of (Array.isArray(state.destinations)?state.destinations:[])){
+      const d=normalizeDestinationName(String(raw||'').trim());
+      const key=d.toLocaleLowerCase('he');
+      if(!d || seen.has(key)) continue;
+      seen.add(key); out.push(d);
+    }
+    // Repair the in-memory state too, so the duplicate does not come back after refresh.
+    if(Array.isArray(state.destinations) && JSON.stringify(state.destinations)!==JSON.stringify(out)) state.destinations=out.slice();
+    return out;
+  }
+
+  const CATEGORIES = [
+    { id:'flights', label:'טיסות', color:'#e0748a' },
+    { id:'hotel', label:'מלון', color:'#3a8d82' },
+    { id:'food', label:'אוכל', color:'#c9a227' },
+    { id:'activity', label:'פעילויות', color:'#6b9fe1' },
+    { id:'transport', label:'תחבורה', color:'#d97c7c' },
+    { id:'other', label:'אחר', color:'#888' }
+  ];
+
+  let state = {
+    days: [],
+    expenses: [],
+    lists: [],
+    restaurants: [],
+    hotels: [],
+    attractions: [],
+    destinations: [],
+    flightDocuments: { elal: [], domestic: [], connection: [] },
+    flightInfo: { elal: {date:'',route:'',number:''}, domestic: [{id:'',date:'',route:'',number:''}], connection: {date:'',route:'',number:''} },
+    ferries: [],
+    passport: { photo:null, number:'', expiry:'', holder:'', notes:'', documents:[] },
+    tripsMeta: {},
+    preTripChecklist: [],
+    countdownDate: ''
+  };
+  let saveTimer = null;
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).substr(2); }
+
+  function normalizeDestinationName(name){
+    const raw=String(name||'').trim();
+    const aliases={
+      'קופיפי':'קו פי פי','קו-פי-פי':'קו פי פי','קו פיפי':'קו פי פי','קו-פיפי':'קו פי פי','קו פי פי':'קו פי פי',
+      'Koh Phi Phi':'קו פי פי','Ko Phi Phi':'קו פי פי','Phi Phi':'קו פי פי','جزر في في':'קו פי פי','جزر فاي فاي':'קו פי פי','كو فاي فاي':'קו פי פי','فاي فاي':'קו פי פי',
+      'Israel':'ישראל'
+    };
+    return aliases[raw] || raw;
+  }
+
+  function normalizeAllDestinations(){
+    state.destinations=(Array.isArray(state.destinations)?state.destinations:[]).map(normalizeDestinationName).filter(Boolean);
+    state.destinations=[...new Set(state.destinations)];
+    state.days=(state.days||[]).map(d=>({...d,city:normalizeDestinationName(d.city)}));
+    (state.attractions||[]).forEach(a=>{a.destination=normalizeDestinationName(a.destination);});
+    (state.restaurants||[]).forEach(a=>{a.destination=normalizeDestinationName(a.destination);});
+    (state.hotels||[]).forEach(a=>{a.destination=normalizeDestinationName(a.destination);});
+  }
+
+  async function loadState(){
+    try{
+      let value=localStorage.getItem(STORAGE_KEY);
+      if(window.storage && typeof window.storage.get==='function'){try{const r=await window.storage.get(STORAGE_KEY);if(r&&r.value)value=r.value;}catch(e){}}
+      if(value) state=JSON.parse(value);
+      state.flightDocuments=state.flightDocuments||{elal:[],domestic:[],connection:[]};
+      state.flightInfo=state.flightInfo||{elal:{date:'',route:'',number:''},domestic:[{id:uid(),date:'',route:'',number:''}],connection:{date:'',route:'',number:''}};
+      // Domestic flights used to be a single object; migrate old data to a list.
+      if(!Array.isArray(state.flightInfo.domestic)){
+        state.flightInfo.domestic = state.flightInfo.domestic && (state.flightInfo.domestic.date || state.flightInfo.domestic.route || state.flightInfo.domestic.number)
+          ? [{...state.flightInfo.domestic,id:state.flightInfo.domestic.id||uid()}] : [{id:uid(),date:'',route:'',number:''}];
+      }
+      state.flightInfo.domestic = state.flightInfo.domestic.map(normalizeFlightInfo);
+      state.ferries=state.ferries||[];
+      state.passport=state.passport||{photo:null,number:'',expiry:'',holder:'',notes:'',documents:[]};
+      state.passport.documents=state.passport.documents||[];
+      state.preTripChecklist=Array.isArray(state.preTripChecklist)?state.preTripChecklist:[];
+      state.countdownDate=state.countdownDate||'';
+      state.days=(state.days||[]).map(d=>({...d,city:d.city||'',activities:d.activities||[]}));
+      normalizeAllDestinations();
+      if(!state.destinations.length && state.days.length) state.destinations=[...new Set(state.days.map(d=>d.city).filter(Boolean))];
+      // Preserve the original Japan × Thailand trip when upgrading older versions.
+      if(!state.destinations.length){
+        const legacyDefaults=['קו סמוי','פוקט','קו פי פי','קראבי','בנגקוק','אוסקה','קיוטו','טוקיו'];
+        const currentName=(state.tripName||'');
+        if(/יפן|תאילנד|japan|thailand/i.test(currentName) || !localStorage.getItem(TRIPS_KEY)){
+          state.destinations=legacyDefaults.slice();
+        }
+      }
+    }catch(e){console.error('load failed',e)}
+    const trips=readTripsSafe();
+    // Remove the old placeholder trip from the trip list when a real trip exists.
+    const placeholderIds=Object.keys(trips).filter(id=>{const n=String(trips[id]?.name||'').trim(); return n==='יומן מסע' || n==='יומן מסע ✈️';});
+    const realIds=Object.keys(trips).filter(id=>!placeholderIds.includes(id));
+    if(placeholderIds.length && realIds.length){
+      placeholderIds.forEach(id=>delete trips[id]);
+      if(placeholderIds.includes(activeTripId)) activeTripId=realIds[0];
+      localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));
+      localStorage.setItem('trip-active-id',activeTripId);
+    }
+    if(!trips.default && !placeholderIds.includes('default')){
+      const initialState=JSON.parse(JSON.stringify(state));
+      if(!initialState.destinations?.length && /יפן|תאילנד|japan|thailand/i.test(document.querySelector('header h1')?.textContent||'')){
+        initialState.destinations=['קו סמוי','פוקט','קו פי פי','קראבי','אוסקה','קיוטו','טוקיו'];
+      }
+      trips.default={name:(document.querySelector('header h1')?.textContent||'הטיול שלי'),state:initialState};
+      localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));
+    }
+    // Recovery: if the Japan × Thailand trip was accidentally deleted, recreate a clean recoverable copy.
+    const hasJapanThailand=Object.values(trips).some(t=>/יפן|תאילנד|japan|thailand/i.test(t?.name||'') || /יפן|תאילנד|japan|thailand/i.test(t?.state?.tripName||''));
+    if(!hasJapanThailand){
+      const recovered={...JSON.parse(JSON.stringify(state)),tripName:'יפן ותאילנד 🇯🇵🇹🇭',destinations:['קו סמוי','פוקט','קו פי פי','קראבי','בנגקוק','אוסקה','קיוטו','טוקיו'],days:[{id:uid(),date:'2027-01-04',city:'קו סמוי',activities:[]}],preTripChecklist:[],countdownDate:'2027-01-04'};
+      const rid='japan-thailand-recovered';
+      trips[rid]={name:'יפן ותאילנד 🇯🇵🇹🇭',state:recovered};
+      localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));
+    }
+    activeTripId=localStorage.getItem('trip-active-id')||'default';
+    if(trips[activeTripId]?.state) state=trips[activeTripId].state;
+    // Keep the Japan × Thailand trip on the requested route, while leaving every custom trip untouched.
+    const activeTripName = trips[activeTripId]?.name || state.tripName || '';
+    if(/יפן|תאילנד|japan|thailand/i.test(activeTripName)){
+      const ordered=['קו סמוי','פוקט','קו פי פי','קראבי','בנגקוק','אוסקה','קיוטו','טוקיו'];
+      const current=[...(state.destinations||[])].map(normalizeDestinationName).filter(Boolean);
+      const extras=current.filter(d=>!ordered.includes(d));
+      const next=[...ordered,...extras.filter((d,i,a)=>a.indexOf(d)===i)];
+      if(JSON.stringify(next)!==JSON.stringify(current)){
+        state.destinations=next;
+        trips[activeTripId]={...(trips[activeTripId]||{}),state:JSON.parse(JSON.stringify(state))};
+        localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+      }
+    }
+    // One-time migration: restore destinations for the existing Japan × Thailand trip if an older build lost them.
+    if(!Array.isArray(state.destinations) || state.destinations.length===0){
+      const tripName=trips[activeTripId]?.name||'';
+      if(/יפן|תאילנד|japan|thailand/i.test(tripName)){
+        state.destinations=['קו סמוי','פוקט','קו פי פי','קראבי','בנגקוק','אוסקה','קיוטו','טוקיו'];
+        trips[activeTripId]={...(trips[activeTripId]||{}),state:JSON.parse(JSON.stringify(state))};
+        localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+      }
+    }
+    renderAll();
+    setTimeout(()=>ensureTripUnlocked(activeTripId),80);
+  }
+  async function persistState(){
+    const value=JSON.stringify(state);
+    localStorage.setItem(STORAGE_KEY,value);
+    if(window.storage&&typeof window.storage.set==='function'){try{await window.storage.set(STORAGE_KEY,value,false)}catch(e){}}
+  }
+  const originalPersistState=persistState;
+  persistState=async function(){await originalPersistState();const trips=readTripsSafe();trips[activeTripId]={name:trips[activeTripId]?.name||'הטיול שלי',state:snapshot()};localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));};
+  function renderTripDateRange(){
+    const el=document.getElementById('tripDateRange'); if(!el)return;
+    const dates=(state.days||[]).map(d=>d?.date).filter(Boolean).sort();
+    if(!dates.length){ el.textContent='הוסיפי תאריכים לטיול'; return; }
+    const first=new Date(dates[0]+'T12:00:00'), last=new Date(dates[dates.length-1]+'T12:00:00');
+    const fmtMonth=d=>d.toLocaleDateString('he-IL',{month:'long',year:'numeric'});
+    const fmtFull=d=>d.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});
+    el.textContent=dates.length===1 ? fmtFull(first) : (first.getFullYear()===last.getFullYear() && first.getMonth()===last.getMonth() ? fmtMonth(first) : `${fmtMonth(first)} — ${fmtMonth(last)}`);
+  }
+  function openTripDatePicker(){
+    const modal=document.getElementById('tripDateModal');
+    const startInput=document.getElementById('tripStartDate');
+    const endInput=document.getElementById('tripEndDate');
+    if(!modal||!startInput||!endInput){alert('לא הצלחתי לפתוח את בחירת התאריכים. נסי שוב.');return;}
+    const dates=(state.days||[]).map(d=>d && d.date).filter(Boolean).sort();
+    startInput.value=dates[0]||'';
+    endInput.value=dates[dates.length-1]||'';
+    modal.style.display='flex';
+    setTimeout(function(){startInput.focus(); if(startInput.showPicker){try{startInput.showPicker();}catch(e){}}},80);
+  }
+  document.getElementById('tripDateRange')?.addEventListener('click',openTripDatePicker);
+  document.getElementById('cancelTripDateRange')?.addEventListener('click',()=>{document.getElementById('tripDateModal').style.display='none';});
+  document.getElementById('saveTripDateRange')?.addEventListener('click',()=>{
+    const start=document.getElementById('tripStartDate').value, end=document.getElementById('tripEndDate').value;
+    if(!start||!end){alert('בחרי תאריך התחלה ותאריך סיום.');return;}
+    if(end<start){alert('תאריך הסיום חייב להיות אחרי תאריך ההתחלה.');return;}
+    const oldByDate=new Map((state.days||[]).filter(d=>d.date).map(d=>[d.date,d]));
+    const dates=[]; let cur=new Date(start+'T12:00:00'), last=new Date(end+'T12:00:00');
+    while(cur<=last){const iso=cur.toISOString().slice(0,10);dates.push(iso);cur.setDate(cur.getDate()+1);}
+    const destinations=Array.isArray(state.destinations)?state.destinations:[];
+    state.days=dates.map((date,i)=>oldByDate.get(date)||{id:uid(),title:'',date,city:destinations[i]||'',country:'',notes:'',activities:[]});
+    if(!state.days.length) state.days=[{id:uid(),title:'',date:start,city:'',country:'',notes:'',activities:[]}];
+    saveState(); renderAll(); document.getElementById('tripDateModal').style.display='none';
+  });
+  function saveState(){clearTimeout(saveTimer);saveTimer=setTimeout(persistState,250); if(typeof renderDashboard==='function') renderDashboard(); if(typeof renderTripDateRange==='function') renderTripDateRange();}
+
+  /* ---------- Itinerary ---------- */
+  const daysList = document.getElementById('daysList');
+
+  function renderDays(){
+    daysList.innerHTML='';
+    if(!state.days.length){daysList.innerHTML='<div class="empty-hint">אין עדיין ימים במסלול — הוסיפו את היום הראשון</div>';return;}
+    state.days.forEach((day,idx)=>{
+      day.activities=day.activities||[];
+      const card=document.createElement('div');card.className='day-card';
+      const done=day.activities.filter(a=>a.done).length,tasks=day.activities.filter(a=>a.type==='task').length,tasksDone=day.activities.filter(a=>a.type==='task'&&a.done).length;
+      const dests=tripDestinations();
+      const cityOptions=dests.map(c=>`<option value="${escapeAttr(c)}" ${day.city===c?'selected':''}>${escapeHtml(c)}</option>`).join('');
+      card.innerHTML=`<div class="day-head"><div class="stamp">${idx+1}</div><div class="day-fields"><input type="text" placeholder="כותרת היום" value="${escapeAttr(day.title)}" data-field="title"><div class="sub-row"><input type="date" value="${escapeAttr(day.date)}" data-field="date"><select class="city-select" data-field="city" style="width:145px"><option value="">בחרי יעד</option>${cityOptions}</select></div></div><div class="country-tag" data-action="toggle-country">${escapeHtml(day.city||'—')}</div></div><div class="mini-summary">📊 ${day.activities.length} פעילויות · ✓ ${done} הושלמו · 📝 ${tasksDone}/${tasks} משימות</div><div class="day-quick">${day.city?`<span>📍 ${escapeHtml(day.city)}</span>`:''}${day.date?`<span>📅 ${formatDateHe(day.date)}</span>`:''}${day.activities.filter(a=>a.time).length?`<span>⏰ ${day.activities.filter(a=>a.time).length} עם שעה</span>`:''}</div><div class="activities"></div><div class="section-actions"><button class="add-btn" data-action="add-activity">＋ הוסף פעילות</button><button class="export-btn" data-action="duplicate-day">📋 שכפול יום</button></div><textarea class="notes-area" placeholder="הערות חופשיות ליום...">${escapeHtml(day.notes||'')}</textarea><div class="day-actions"><button class="icon-btn" data-action="delete">מחק יום ✕</button></div>`;
+      card.querySelectorAll('[data-field]').forEach(inp=>inp.addEventListener('input',()=>{day[inp.dataset.field]=inp.value;saveState();renderTripDateRange();}));
+      card.querySelector('.notes-area').addEventListener('input',e=>{day.notes=e.target.value;saveState();});
+      card.querySelector('[data-action="toggle-country"]').onclick=()=>{day.country=day.country==='jp'?'th':day.country==='th'?'':'jp';saveState();renderDays();};
+      card.querySelector('[data-action="delete"]').onclick=()=>{if(confirm('למחוק את היום?')){state.days.splice(idx,1);saveState();renderDays();}};
+      card.querySelector('[data-action="add-activity"]').onclick=()=>{day.activities.push({id:uid(),time:'',title:'',status:'מתוכנן',done:false,type:'activity',notes:''});saveState();renderDays();};
+      card.querySelector('[data-action="duplicate-day"]').onclick=()=>{const copy=JSON.parse(JSON.stringify(day));copy.id=uid();copy.title=(day.title||`יום ${idx+1}`)+' — עותק';copy.activities=(copy.activities||[]).map(a=>({...a,id:uid()}));state.days.splice(idx+1,0,copy);saveState();renderDays();};
+      const acts=card.querySelector('.activities');
+      day.activities.forEach((a,ai)=>{const row=document.createElement('div');row.className='activity-card';row.innerHTML=`<div class="activity-grid"><input type="time" value="${escapeAttr(a.time||'')}" data-a="time"><input type="text" value="${escapeAttr(a.title||'')}" placeholder="פעילות / משימה" data-a="title"><select data-a="status"><option>מתוכנן</option><option>בתהליך</option><option>הושלם</option><option>בוטל</option></select><button class="check-btn" data-a="done">${a.done?'✓':'○'}</button></div><textarea placeholder="הערות..." data-a="notes">${escapeHtml(a.notes||'')}</textarea><div class="section-actions"><button class="icon-btn" data-a="delete">מחק פעילות ✕</button></div>`;row.querySelector('[data-a="status"]').value=a.status||'מתוכנן';row.querySelectorAll('[data-a]').forEach(el=>{const k=el.dataset.a;if(k==='done')el.onclick=()=>{a.done=!a.done;if(a.done)a.status='הושלם';saveState();renderDays();};else if(k==='delete')el.onclick=()=>{day.activities.splice(ai,1);saveState();renderDays();};else el.addEventListener('input',()=>{a[k]=el.value;saveState();});});acts.appendChild(row);});
+      daysList.appendChild(card);
+    });
+  }
+  document.getElementById('addDayBtn').addEventListener('click',()=>{state.days.push({id:uid(),title:'',date:'',city:'',country:'',notes:'',activities:[]});saveState();renderDays();renderTripDateRange();});
+
+
+  /* ---------- Flight Documents ---------- */
+  const FLIGHT_GROUPS = [
+    {id:'elal', title:'✈️ טיסות אל על'},
+    {id:'domestic', title:'🛫 טיסות פנים'},
+    {id:'connection', title:'🔁 טיסות מעבר'}
+  ];
+  function formatBytes(n){ if(!n) return ''; const units=['B','KB','MB']; let i=0,v=n; while(v>=1024&&i<2){v/=1024;i++;} return v.toFixed(i?1:0)+' '+units[i]; }
+  function normalizeFlightInfo(info){
+    return {...info, airline:info.airline||'', terminal:info.terminal||'', baggage:info.baggage||'', booking:info.booking||'', status:info.status||'מתוכננת', id:info.id||uid()};
+  }
+
+  function renderFlightDocuments(){
+    const box=document.getElementById('flightDocuments'); if(!box)return; box.innerHTML='';
+    if(!state.flightDocuments) state.flightDocuments={elal:[],domestic:[],connection:[]};
+    if(!state.flightInfo) state.flightInfo={elal:{date:'',route:'',number:''},domestic:[{id:uid(),date:'',route:'',number:''}],connection:{date:'',route:'',number:''}};
+    if(!Array.isArray(state.flightInfo.domestic)){
+      state.flightInfo.domestic = state.flightInfo.domestic && (state.flightInfo.domestic.date || state.flightInfo.domestic.route || state.flightInfo.domestic.number)
+        ? [{...state.flightInfo.domestic,id:state.flightInfo.domestic.id||uid()}] : [{id:uid(),date:'',route:'',number:''}];
+    }
+    state.flightInfo.domestic = state.flightInfo.domestic.map(normalizeFlightInfo);
+
+    FLIGHT_GROUPS.forEach(group=>{
+      const sec=document.createElement('div'); sec.className='flight-section';
+      sec.innerHTML=`<h3>${group.title}</h3>`;
+      const isDomestic=group.id==='domestic';
+      const flights=isDomestic ? state.flightInfo.domestic : [state.flightInfo[group.id] || (state.flightInfo[group.id]={date:'',route:'',number:''})];
+      const flightsWrap=document.createElement('div'); flightsWrap.className=isDomestic?'domestic-flights':'';
+      flights.forEach((info,flightIndex)=>{
+        const card=document.createElement('div');
+        card.className=isDomestic?'domestic-flight-card':'';
+        card.innerHTML=`
+          ${isDomestic?`<div class="domestic-flight-title">🛫 טיסת פנים ${flightIndex+1}
+            ${flights.length>1?'<button type="button" class="icon-btn domestic-delete" title="מחיקת טיסה">מחק ✕</button>':''}
+          </div>`:''}
+          <div class="flight-card-title">${escapeHtml(info.route||'טיסה חדשה')}${info.number?` · ${escapeHtml(info.number)}`:''}</div>
+          <div class="flight-meta">
+            <input type="date" value="${escapeAttr(info.date||'')}" data-info="date" aria-label="תאריך טיסה">
+            <input type="text" value="${escapeAttr(info.number||'')}" data-info="number" placeholder="מספר טיסה">
+            <input class="wide" type="text" value="${escapeAttr(info.route||'')}" data-info="route" placeholder="מסלול, למשל טוקיו → אוסקה">
+            <input type="text" value="${escapeAttr(info.airline||'')}" data-info="airline" placeholder="חברת תעופה">
+            <input type="text" value="${escapeAttr(info.terminal||'')}" data-info="terminal" placeholder="טרמינל">
+            <input type="text" value="${escapeAttr(info.baggage||'')}" data-info="baggage" placeholder="כבודה">
+            <input type="text" value="${escapeAttr(info.booking||'')}" data-info="booking" placeholder="מספר הזמנה">
+            <select data-info="status">
+              <option value="מתוכננת" ${info.status==='מתוכננת'?'selected':''}>מתוכננת</option>
+              <option value="הוזמנה" ${info.status==='הוזמנה'?'selected':''}>הוזמנה</option>
+              <option value="בוצעה" ${info.status==='בוצעה'?'selected':''}>בוצעה</option>
+              <option value="בוטלה" ${info.status==='בוטלה'?'selected':''}>בוטלה</option>
+            </select>
+          </div>`;
+        card.querySelectorAll('[data-info]').forEach(inp=>inp.addEventListener('input',()=>{
+          info[inp.dataset.info]=inp.value; saveState();
+        }));
+        const del=card.querySelector('.domestic-delete');
+        if(del) del.onclick=()=>{
+          const idx=state.flightInfo.domestic.findIndex(f=>f.id===info.id);
+          if(idx>=0) state.flightInfo.domestic.splice(idx,1);
+          if(!state.flightInfo.domestic.length) state.flightInfo.domestic.push({id:uid(),date:'',route:'',number:''});
+          saveState(); renderFlightDocuments();
+        };
+        flightsWrap.appendChild(card);
+      });
+      sec.appendChild(flightsWrap);
+
+      if(isDomestic){
+        const add=document.createElement('button'); add.type='button'; add.className='add-btn'; add.textContent='＋ הוסף טיסת פנים';
+        add.onclick=()=>{
+          state.flightInfo.domestic.push({id:uid(),date:'',route:'',number:''});
+          saveState(); renderFlightDocuments();
+        };
+        sec.appendChild(add);
+      }
+
+      const list=document.createElement('div'); list.className='doc-list';
+      (state.flightDocuments[group.id]||[]).forEach((doc,i)=>{
+        const row=document.createElement('div'); row.className='doc-item';
+        row.innerHTML=`<a href="${doc.data}" download="${escapeAttr(doc.name)}">📄 ${escapeHtml(doc.name)}</a><span class="doc-size">${formatBytes(doc.size)}</span><button class="icon-btn">✕</button>`;
+        row.querySelector('button').onclick=()=>{state.flightDocuments[group.id].splice(i,1);saveState();renderFlightDocuments();};
+        list.appendChild(row);
+      });
+      sec.appendChild(list);
+      const upload=document.createElement('div'); upload.className='doc-upload';
+      upload.innerHTML=`<button class="file-pick-btn" type="button">📎 הוספת מסמכים</button><input type="file" multiple accept="*/*" style="display:none">`;
+      const input=upload.querySelector('input');
+      upload.querySelector('button').onclick=()=>input.click();
+      input.onchange=async()=>{
+        for(const file of Array.from(input.files||[])){
+          if(file.size>8*1024*1024){alert('מקסימום 8MB לקובץ');continue;}
+          await new Promise(res=>{const r=new FileReader();r.onload=e=>{state.flightDocuments[group.id].push({name:file.name,data:e.target.result,type:file.type,size:file.size});res();};r.onerror=res;r.readAsDataURL(file);});
+        }
+        saveState();renderFlightDocuments();
+      };
+      sec.appendChild(upload);
+      const count=state.flightDocuments[group.id]?.length||0;
+      const countEl=document.createElement('div'); countEl.className='doc-count'; countEl.textContent=count?`${count} מסמכים מצורפים`:'עדיין לא הועלו מסמכים'; sec.appendChild(countEl);
+      box.appendChild(sec);
+    });
+  }
+
+  /* ---------- Ferries & Passport ---------- */
+  function renderFerriesAndPassport(){
+    const ferryBox=document.getElementById('ferrySection'),passBox=document.getElementById('passportSection'), ferryDedicated=document.getElementById('ferrySectionDedicated'), passDedicated=document.getElementById('passportSectionDedicated');state.ferries=state.ferries||[];
+    ferryBox.innerHTML=`<h3>⛴️ מעבורות</h3><div id="ferryList"></div><button class="add-btn" id="addFerryBtn">＋ הוסף מעבורת</button>`;
+    const fl=ferryBox.querySelector('#ferryList');
+    if(!state.ferries.length)fl.innerHTML='<div class="empty-hint">אין מעבורות עדיין</div>';
+    state.ferries.forEach((f,i)=>{const c=document.createElement('div');c.className='ferry-card';c.innerHTML=`<div class="ferry-grid"><input value="${escapeAttr(f.from||'')}" placeholder="מוצא" data-k="from"><input value="${escapeAttr(f.to||'')}" placeholder="יעד" data-k="to"><input type="date" value="${escapeAttr(f.date||'')}" data-k="date"><input type="time" value="${escapeAttr(f.time||'')}" data-k="time"><input value="${escapeAttr(f.company||'')}" placeholder="חברה" data-k="company"><input value="${escapeAttr(f.booking||'')}" placeholder="מספר הזמנה" data-k="booking"></div><div class="section-actions"><button class="file-pick-btn" data-upload>📎 מסמך/כרטיס</button><input type="file" style="display:none" data-file><button class="icon-btn" data-delete>מחק ✕</button></div><div class="mini-summary">${f.document?`📄 <a href="${f.document.data}" download="${escapeAttr(f.document.name)}">${escapeHtml(f.document.name)}</a>`:''}</div>`;c.querySelectorAll('[data-k]').forEach(el=>el.oninput=()=>{f[el.dataset.k]=el.value;saveState();});c.querySelector('[data-delete]').onclick=()=>{state.ferries.splice(i,1);saveState();renderFerriesAndPassport();};const inp=c.querySelector('[data-file]');c.querySelector('[data-upload]').onclick=()=>inp.click();inp.onchange=()=>{const file=inp.files?.[0];if(!file)return;if(file.size>8*1024*1024){alert('מקסימום 8MB לקובץ');return;}const r=new FileReader();r.onload=e=>{f.document={name:file.name,data:e.target.result,size:file.size,type:file.type};saveState();renderFerriesAndPassport();};r.readAsDataURL(file);};fl.appendChild(c);});
+    ferryBox.querySelector('#addFerryBtn').onclick=()=>{state.ferries.push({id:uid(),from:'',to:'',date:'',time:'',company:'',booking:'',document:null});saveState();renderFerriesAndPassport();};
+    // Multiple passports (backward compatible with the previous single-passport structure)
+    if(!Array.isArray(state.passports)){
+      state.passports = state.passport ? [state.passport] : [];
+      delete state.passport;
+    }
+    const passportMarkup = (p,i)=>`<div class="passport-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>🪪 דרכון ${i+1}</strong>${state.passports.length>1?`<button class="icon-btn" data-pass-delete="${i}">מחק ✕</button>`:''}</div><div class="passport-grid"><input value="${escapeAttr(p.holder||'')}" placeholder="שם בעל/ת הדרכון" data-p="holder"><input value="${escapeAttr(p.number||'')}" placeholder="מספר דרכון" data-p="number"><input type="date" value="${escapeAttr(p.expiry||'')}" data-p="expiry"><input value="${escapeAttr(p.notes||'')}" placeholder="הערות" data-p="notes"></div><div class="section-actions"><button class="file-pick-btn" data-photo-btn>📷 צילום דרכון</button><input data-photo-input type="file" accept="image/*" capture="environment" style="display:none"><button class="file-pick-btn" data-docs-btn>📎 הוספת מסמכים</button><input data-docs-input type="file" multiple style="display:none"></div><div class="mini-summary">${p.photo?`📷 <a href="${p.photo.data}" target="_blank" rel="noopener">${escapeHtml(p.photo.name)}</a>`:'לא צורף צילום דרכון'} · ${(p.documents||[]).length} מסמכים נוספים</div><div class="mini-summary">${(p.documents||[]).map(d=>`📄 <a href="${d.data}" download="${escapeAttr(d.name)}">${escapeHtml(d.name)}</a>`).join(' · ')}</div></div>`;
+    const passportHtml=()=>`<h3>🪪 דרכונים</h3><small>אפשר לשמור כמה דרכונים בנפרד.</small><div id="passportList">${state.passports.length?state.passports.map(passportMarkup).join(''):'<div class="empty-hint">אין דרכונים עדיין</div>'}</div><button class="add-btn" id="addPassportBtn">＋ הוסף דרכון</button>`;
+    passBox.innerHTML=passportHtml();
+    if(passDedicated) passDedicated.innerHTML=passportHtml();
+    const bindPassportBox=(box)=>{if(!box)return;box.querySelectorAll('.passport-card').forEach((card,i)=>{const p=state.passports[i];card.querySelectorAll('[data-p]').forEach(el=>el.oninput=()=>{p[el.dataset.p]=el.value;saveState();});const pi=card.querySelector('[data-photo-input]');card.querySelector('[data-photo-btn]').onclick=()=>pi.click();pi.onchange=()=>{const file=pi.files?.[0];if(!file)return;const r=new FileReader();r.onload=e=>{p.photo={name:file.name,data:e.target.result,size:file.size,type:file.type};saveState();renderFerriesAndPassport();};r.readAsDataURL(file);};const di=card.querySelector('[data-docs-input]');card.querySelector('[data-docs-btn]').onclick=()=>di.click();di.onchange=async()=>{p.documents=p.documents||[];for(const file of Array.from(di.files||[])){if(file.size>8*1024*1024)continue;await new Promise(res=>{const r=new FileReader();r.onload=e=>{p.documents.push({name:file.name,data:e.target.result,size:file.size,type:file.type});res();};r.readAsDataURL(file);});}saveState();renderFerriesAndPassport();};const del=card.querySelector('[data-pass-delete]');if(del)del.onclick=()=>{state.passports.splice(i,1);saveState();renderFerriesAndPassport();};});const add=box.querySelector('#addPassportBtn');if(add)add.onclick=()=>{state.passports.push({id:uid(),photo:null,number:'',expiry:'',holder:'',notes:'',documents:[]});saveState();renderFerriesAndPassport();};};
+    bindPassportBox(passBox);bindPassportBox(passDedicated);
+  }
+
+  /* ---------- Travel Tools ---------- */
+  const placeCache={};
+  const DESTINATION_COORDS={
+    'קו פי פי':{lat:7.7456,lon:98.7784,label:'Ko Phi Phi, Thailand'},
+    'קופיפי':{lat:7.7456,lon:98.7784,label:'Ko Phi Phi, Thailand'},
+    'פוקט':{lat:7.8804,lon:98.3923,label:'Phuket, Thailand'},
+    'קוסמוי':{lat:9.5120,lon:100.0136,label:'Ko Samui, Thailand'},
+    'קו סמוי':{lat:9.5120,lon:100.0136,label:'Ko Samui, Thailand'},
+    'קראבי':{lat:8.0863,lon:98.9063,label:'Krabi, Thailand'},
+    'בנגקוק':{lat:13.7563,lon:100.5018,label:'Bangkok, Thailand'},
+    'טוקיו':{lat:35.6762,lon:139.6503,label:'Tokyo, Japan'},
+    'קיוטו':{lat:35.0116,lon:135.7681,label:'Kyoto, Japan'},
+    'אוסקה':{lat:34.6937,lon:135.5023,label:'Osaka, Japan'},
+    'ישראל':{lat:31.7683,lon:35.2137,label:'Israel'}
+  };
+  const DESTINATION_TIMEZONES={'קו סמוי':'Asia/Bangkok','קוסמוי':'Asia/Bangkok','פוקט':'Asia/Bangkok','קו פי פי':'Asia/Bangkok','קופיפי':'Asia/Bangkok','קראבי':'Asia/Bangkok','בנגקוק':'Asia/Bangkok','אוסקה':'Asia/Tokyo','קיוטו':'Asia/Tokyo','טוקיו':'Asia/Tokyo','ישראל':'Asia/Jerusalem'};
+  const DESTINATION_FLAGS={'קו סמוי':'🇹🇭','קוסמוי':'🇹🇭','פוקט':'🇹🇭','קו פי פי':'🇹🇭','קופיפי':'🇹🇭','קראבי':'🇹🇭','בנגקוק':'🇹🇭','אוסקה':'🇯🇵','קיוטו':'🇯🇵','טוקיו':'🇯🇵','ישראל':'🇮🇱'};
+  const DESTINATION_PRESETS=[
+    ['קו סמוי','תאילנד'],['פוקט','תאילנד'],['קו פי פי','תאילנד'],['קראבי','תאילנד'],['בנגקוק','תאילנד'],
+    ['אוסקה','יפן'],['קיוטו','יפן'],['טוקיו','יפן'],['סיאול','קוריאה הדרומית'],['סינגפור','סינגפור'],
+    ['באלי','אינדונזיה'],['הונג קונג','הונג קונג'],['פריז','צרפת'],['לונדון','בריטניה'],['רומא','איטליה'],
+    ['ברצלונה','ספרד'],['אמסטרדם','הולנד'],['ליסבון','פורטוגל'],['ברלין','גרמניה'],['וינה','אוסטריה'],
+    ['ניו יורק','ארה״ב'],['לוס אנג׳לס','ארה״ב'],['מיאמי','ארה״ב'],['טורונטו','קנדה'],['סידני','אוסטרליה'],
+    ['מלבורן','אוסטרליה'],['קייפטאון','דרום אפריקה'],['דובאי','איחוד האמירויות'],['אבו דאבי','איחוד האמירויות'],
+    ['אתונה','יוון'],['איסטנבול','טורקיה'],['קהיר','מצרים'],['ישראל','ישראל']
+  ];
+  function countryFlag(code){
+    const c=String(code||'').toUpperCase();
+    if(!/^[A-Z]{2}$/.test(c)) return '📍';
+    return String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt(0)));
+  }
+  function localDateISO(timeZone='Asia/Jerusalem', date=new Date()){
+    const parts=new Intl.DateTimeFormat('en-US',{timeZone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+    const map=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+    return `${map.year}-${map.month}-${map.day}`;
+  }
+  function tripWeatherDate(){
+    const dates=(state.days||[]).map(d=>d?.date).filter(Boolean).sort();
+    if(!dates.length)return null;
+    const today=localDateISO('Asia/Jerusalem');
+    const future=dates.find(d=>d>=today);
+    return future||dates[dates.length-1];
+  }
+  function daysBetween(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
+  async function resolveDestinationPlace(name, forecastDate=null){
+    name=normalizeDestinationName(name); if(!name)return null;
+    let fixed=DESTINATION_COORDS[name]||null;
+    let resolvedFlag=DESTINATION_FLAGS[name]||'📍';
+    let resolvedTz=DESTINATION_TIMEZONES[name]||null;
+    if(!fixed){
+      const geoKey='geo|'+name;
+      try{
+        let geo=placeCache[geoKey];
+        if(!geo){
+          let r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(name)+'&count=5&language=he&format=json',{cache:'no-store'});
+          if(!r.ok) throw new Error('geocoding http '+r.status);
+          let j=await r.json();
+          let result=(j.results||[])[0];
+          if(!result){
+            r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(name)+'&count=5&language=en&format=json',{cache:'no-store'});
+            if(!r.ok) throw new Error('geocoding fallback http '+r.status);
+            j=await r.json(); result=(j.results||[])[0];
+          }
+          if(!result) throw new Error('city not found');
+          geo={lat:result.latitude,lon:result.longitude,label:[result.name,result.country].filter(Boolean).join(', '),tz:result.timezone||'UTC',flag:countryFlag(result.country_code)};
+          placeCache[geoKey]=geo;
+        }
+        fixed={lat:geo.lat,lon:geo.lon,label:geo.label};
+        resolvedTz=geo.tz; resolvedFlag=geo.flag;
+      }catch(e){
+        console.error('geocoding failed',name,e);
+        return null;
+      }
+    }
+    const tz=resolvedTz||'UTC';
+    const key=name+'|'+(forecastDate||'current');
+    if(placeCache[key])return placeCache[key];
+    try{
+      let url;
+      let selectedDaily=null;
+      if(forecastDate){
+        // Use one forecast window and select the requested day from it. This is
+        // more reliable for 'today' than asking the API for a one-day range.
+        const today=localDateISO('Asia/Jerusalem');
+        const diff=daysBetween(today,forecastDate);
+        if(diff>=0 && diff<=16){
+          // Use a 16-day window for every requested date. This avoids the old
+          // one-day window bug where tomorrow could be returned as unavailable.
+          url=`https://api.open-meteo.com/v1/forecast?latitude=${fixed.lat}&longitude=${fixed.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto&forecast_days=16`;
+        } else {
+          const place={name,city:fixed.label.split(',')[0],lat:fixed.lat,lon:fixed.lon,tz,flag:resolvedFlag||'📍',forecast:null,forecastDate,tooFar:true};
+          placeCache[key]=place; return place;
+        }
+      } else {
+        url=`https://api.open-meteo.com/v1/forecast?latitude=${fixed.lat}&longitude=${fixed.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto&forecast_days=1`;
+      }
+      const m=await fetch(url,{cache:'no-store'}); if(!m.ok)throw new Error('weather http '+m.status);
+      const j=await m.json();
+      if(!j.daily || !j.daily.time || !j.daily.time.length) throw new Error('missing daily forecast');
+      if(forecastDate){
+        const idx=j.daily.time.indexOf(forecastDate);
+        if(idx<0) throw new Error('requested date not in forecast window');
+        selectedDaily={time:[j.daily.time[idx]],temperature_2m_max:[j.daily.temperature_2m_max?.[idx]],temperature_2m_min:[j.daily.temperature_2m_min?.[idx]],precipitation_probability_max:[j.daily.precipitation_probability_max?.[idx]],weather_code:[j.daily.weather_code?.[idx]]};
+      } else {
+        selectedDaily=j.daily;
+      }
+      const place={name,city:fixed.label.split(',')[0],lat:fixed.lat,lon:fixed.lon,tz:resolvedTz||j.timezone||tz,flag:resolvedFlag||'📍',current:j.current||null,forecast:selectedDaily,forecastDate,tooFar:false};
+      placeCache[key]=place; return place;
+    }catch(e){
+      console.error('weather failed',name,e);
+      const place={name,city:fixed.label.split(',')[0],lat:fixed.lat,lon:fixed.lon,tz,flag:resolvedFlag||'📍',current:null,forecast:null,forecastDate,tooFar:false};
+      placeCache[key]=place; return place;
+    }
+  }
+
+  async function getTripPlaces(forecastDate=null){
+    const names=[...tripDestinations()];
+    if(!names.some(n=>normalizeDestinationName(n)==='ישראל'))names.push('ישראל');
+    return (await Promise.all(names.map(n=>resolveDestinationPlace(n,forecastDate)))).filter(Boolean);
+  }
+
+  document.getElementById('openMapBtn').onclick=()=>{
+    const route=[...new Set((state.days||[]).map(d=>String(d.city||'').trim()).filter(Boolean))];
+    if(!route.length){alert('הוסיפי לפחות יעד אחד או יום עם יעד כדי להציג את המסלול.');return;}
+    let url;
+    if(route.length>=2){
+      const origin=route[0],destination=route[route.length-1],waypoints=route.slice(1,-1);
+      url='https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+encodeURIComponent(origin)+'&destination='+encodeURIComponent(destination);
+      if(waypoints.length)url+='&waypoints='+encodeURIComponent(waypoints.join('|'));
+    }else url='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(route[0]);
+    const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.style.display='none';document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),1000);
+  };
+
+  document.getElementById('weatherBtn').onclick=async()=>{
+    const box=document.getElementById('weatherResult'); box.style.display='block';
+    const today=localDateISO('Asia/Jerusalem');
+    const tripDates=(state.days||[]).map(d=>d?.date).filter(Boolean).sort();
+    const preferred=today;
+    box.innerHTML=`<b>🌤️ מזג אוויר יומי</b>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label for="weatherDatePicker">בחרי תאריך:</label>
+        <input id="weatherDatePicker" type="date" value="${preferred}" style="padding:9px;border-radius:10px;border:1px solid #ddd;font-size:16px">
+        <button id="weatherTodayBtn" type="button" class="tool-btn" style="padding:9px 12px">היום</button>
+      </div>
+      <div id="weatherDateHint" class="empty-hint" style="margin-top:6px"></div>
+      <div class="weather-grid">טוען...</div>`;
+
+    const render=async(date)=>{
+      const grid=box.querySelector('.weather-grid');
+      const hint=box.querySelector('#weatherDateHint');
+      if(!date){ if(grid)grid.innerHTML='<div class="empty-hint">בחרי תאריך כדי לראות את מזג האוויר.</div>'; return; }
+      const isTodayRequest=date===today;
+      const requestedDate=date;
+      const diff=daysBetween(today,requestedDate);
+      if(hint) hint.textContent = isTodayRequest ? 'תחזית יומית להיום, לפי היום המקומי בכל יעד.' : (diff>=0 && diff<=16 ? 'תחזית זמינה לתאריך הזה.' : (diff>16 ? 'לתאריך הזה עדיין אין תחזית מדויקת. אפשר לראות תחזית עד כ־16 ימים קדימה.' : 'זה תאריך עבר — אציג נתוני עבר רק אם השירות זמין לכך.'));
+      if(grid)grid.innerHTML='טוען...';
+      try{
+        const places=await getTripPlaces(requestedDate);
+        if(!places.length){grid.innerHTML='<div class="empty-hint">לא נמצאו יעדים.</div>';return;}
+        const weatherText=code=>({0:'☀️ בהיר',1:'🌤️ בעיקר בהיר',2:'⛅ מעונן חלקית',3:'☁️ מעונן',45:'🌫️ ערפל',48:'🌫️ ערפל',51:'🌦️ טפטוף',53:'🌦️ טפטוף',55:'🌧️ גשם',61:'🌧️ גשם',63:'🌧️ גשם',65:'🌧️ גשם חזק',80:'🌦️ ממטרים',81:'🌦️ ממטרים',82:'⛈️ ממטרים חזקים',95:'⛈️ סופת רעמים',96:'⛈️ רעמים וברד',99:'⛈️ רעמים וברד'}[code]||'🌤️');
+        grid.innerHTML=places.map(p=>{
+          if(p.forecast && p.forecast.temperature_2m_max?.length){
+            const currentLine=(requestedDate===today && p.current?.temperature_2m!=null) ? `<div class="mini-summary">עכשיו: <b>${p.current.temperature_2m}°C</b>${p.current.weather_code!=null?' · '+weatherText(p.current.weather_code):''}</div>` : '';
+            return `<div class="weather-card"><div class="country">${p.flag} ${escapeHtml(p.name)}</div><div>${escapeHtml(p.city)}</div><div class="temp">${p.forecast.temperature_2m_max[0]}° / ${p.forecast.temperature_2m_min[0]}°C</div>${currentLine}<div>${weatherText(p.forecast.weather_code?.[0])}</div><div>🌧️ סיכוי לגשם: ${p.forecast.precipitation_probability_max?.[0] ?? '—'}%</div></div>`;
+          }
+          if(p.tooFar)return `<div class="weather-card"><div class="country">${p.flag} ${escapeHtml(p.name)}</div><div>התחזית לתאריך הזה עדיין רחוקה מדי.</div><div class="mini-summary">תחזית מדויקת זמינה עד כ־16 ימים קדימה.</div></div>`;
+          return `<div class="weather-card"><div class="country">${p.flag} ${escapeHtml(p.name)}</div><div>לא ניתן לטעון מזג אוויר כרגע</div></div>`;
+        }).join('');
+      }catch(e){ if(grid)grid.innerHTML='<div class="empty-hint">לא הצלחתי לטעון את מזג האוויר כרגע. נסי שוב בעוד רגע.</div>'; }
+    };
+    const picker=box.querySelector('#weatherDatePicker');
+    if(picker)picker.onchange=()=>render(picker.value);
+    const todayBtn=box.querySelector('#weatherTodayBtn');
+    if(todayBtn)todayBtn.onclick=()=>{
+      const freshToday=localDateISO('Asia/Jerusalem',new Date());
+      picker.value=freshToday;
+      for(const key of Object.keys(placeCache)){ if(key.endsWith('|'+freshToday)) delete placeCache[key]; }
+      render(freshToday);
+    };
+    // Never reuse cached data for today: current conditions should be live.
+    for(const key of Object.keys(placeCache)){ if(key.endsWith('|'+preferred)) delete placeCache[key]; }
+    render(preferred);
+  };
+
+  document.getElementById('worldClockBtn').onclick=async()=>{
+    const box=document.getElementById('worldClockResult'); box.style.display='block';
+    try{
+      const names=[...tripDestinations()];
+      if(!names.some(n=>normalizeDestinationName(n)==='ישראל')) names.push('ישראל');
+      const places=(await Promise.all(names.map(n=>resolveDestinationPlace(n)))).filter(Boolean);
+      if(!places.length){box.innerHTML='<b>🕐 שעה מקומית</b><div class="empty-hint">לא נמצאו יעדים.</div>';return;}
+      const now=new Date();
+      box.innerHTML='<b>🕐 שעה מקומית — כל יום, בכל זמן</b><div class="clock-grid">'+places.map(p=>{try{const time=new Intl.DateTimeFormat('he-IL',{timeZone:p.tz,hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now);const date=new Intl.DateTimeFormat('he-IL',{timeZone:p.tz,weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}).format(now);return `<div class="clock-card"><div class="country">${p.flag} ${escapeHtml(p.name)}</div><div class="time">${time}</div><div class="date">${date}</div></div>`;}catch(e){return `<div class="clock-card"><div class="country">${p.flag} ${escapeHtml(p.name)}</div><div>לא ניתן להציג שעה</div></div>`;}}).join('')+'</div>';
+    }catch(e){box.innerHTML='<b>🕐 שעה מקומית</b><div class="empty-hint">לא הצלחתי לטעון את השעות כרגע.</div>';}
+  };
+
+  document.getElementById('notifyBtn').onclick=async()=>{
+    if(!('Notification' in window)){alert('הדפדפן לא תומך בהתראות.');return;}
+    const p=await Notification.requestPermission(); alert(p==='granted'?'התראות אושרו. אפשר להוסיף בהמשך תזכורות לפי ימים.':'ההתראות לא אושרו.');
+  };
+  document.getElementById('shareBackupBtn').onclick=async()=>{
+    try{
+      await persistState();
+      const backup={version:4,createdAt:new Date().toISOString(),activeTripId,trips:readTripsSafe(),state};
+      const json=JSON.stringify(backup,null,2);
+      const blob=new Blob([json],{type:'application/json'});
+      const file=new File([blob],'יומן-מסע-מידע.json',{type:'application/json'});
+      if(navigator.share && (!navigator.canShare || navigator.canShare({files:[file]}))){
+        try{await navigator.share({title:'יומן מסע',text:'העברת המידע שלי מיומן המסע',files:[file]});return;}catch(err){if(err?.name==='AbortError')return;}
+      }
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download='יומן-מסע-מידע.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      alert('המידע הוכן. אפשר לשלוח את הקובץ דרך WhatsApp, AirDrop, מייל או כל אפליקציה אחרת.');
+    }catch(err){alert('לא הצלחתי להכין את קובץ המידע.');}
+  };
+  document.getElementById('importBackupBtn').onclick=()=>document.getElementById('importBackupInput').click();
+  document.getElementById('importBackupInput').onchange=async(e)=>{
+    const file=e.target.files?.[0]; if(!file)return;
+    try{const imported=JSON.parse(await file.text());if(!confirm('לייבא את הגיבוי ולהחליף את הנתונים הנוכחיים?'))return;if(imported.trips){localStorage.setItem(TRIPS_KEY,JSON.stringify(imported.trips));activeTripId=imported.activeTripId||Object.keys(imported.trips)[0]||'default';localStorage.setItem('trip-active-id',activeTripId);state=imported.trips[activeTripId]?.state||imported.state||state;}else if(imported.days){state={...state,...imported};}await persistState();renderAll();alert('הגיבוי יובא בהצלחה.');}catch(err){alert('קובץ הגיבוי אינו תקין.');}
+  };
+
+  /* ---------- Restaurants ---------- */
+  function renderRestaurants(){
+    const tabsContainer = document.getElementById('restaurantTabs');
+    const contentContainer = document.getElementById('restaurantContent');
+    
+    tabsContainer.innerHTML = '';
+    contentContainer.innerHTML = '';
+    
+    const tabs = document.createElement('div');
+    tabs.className = 'destination-tabs';
+    
+    const destinations=tripDestinations();
+    let activeDestination = localStorage.getItem('activeRestaurantDest');
+    if(!destinations.includes(activeDestination)) activeDestination=destinations[0]||'';
+    
+    destinations.forEach(dest => {
+      const btn = document.createElement('button');
+      btn.className = 'dest-tab' + (dest === activeDestination ? ' active' : '');
+      btn.textContent = dest;
+      btn.addEventListener('click', ()=>{
+        localStorage.setItem('activeRestaurantDest', dest);
+        renderRestaurants();
+      });
+      tabsContainer.appendChild(btn);
+    });
+    
+    contentContainer.innerHTML = '';
+    const restaurantsInDest = state.restaurants.filter(r => r.destination === activeDestination);
+    
+    if(restaurantsInDest.length === 0){
+      contentContainer.innerHTML = '<div class="empty-hint">אין מסעדות רשומות לעיר זו</div>';
+    }else{
+      restaurantsInDest.forEach((restaurant, idx)=>{
+        const card = createRestaurantCard(restaurant, idx, restaurantsInDest);
+        contentContainer.appendChild(card);
+      });
+    }
+  }
+
+  function createRestaurantCard(restaurant, idx, list){
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+      <div class="item-card-header">
+        <input type="text" placeholder="שם המסעדה" value="${escapeAttr(restaurant.name)}" data-field="name">
+        <button class="icon-btn" data-action="delete">✕</button>
+      </div>
+      <textarea placeholder="כתובת, טלפון, שעות פתיחה, הערות..." data-field="notes">${escapeHtml(restaurant.notes || '')}</textarea>
+    `;
+    
+    const nameInput = card.querySelector('input[data-field="name"]');
+    nameInput.addEventListener('input', (e)=>{
+      restaurant.name = e.target.value;
+      saveState();
+    });
+    
+    const notesArea = card.querySelector('textarea');
+    notesArea.addEventListener('input', (e)=>{
+      restaurant.notes = e.target.value;
+      saveState();
+    });
+    const deleteBtn = card.querySelector('[data-action="delete"]');
+    deleteBtn.addEventListener('click', ()=>{
+      state.restaurants = state.restaurants.filter(r => r.id !== restaurant.id);
+      saveState();
+      renderRestaurants();
+    });
+    return card;
+  }
+
+  document.getElementById('addRestaurantBtn').addEventListener('click', ()=>{
+    const dest = localStorage.getItem('activeRestaurantDest') || tripDestinations()[0] || '';
+    state.restaurants.push({
+      id: uid(),
+      destination: dest,
+      name: '',
+      notes: ''
+    });
+    saveState();
+    renderRestaurants();
+  });
+
+  /* ---------- Hotels ---------- */
+  function renderHotels(){
+    const tabsContainer = document.getElementById('hotelTabs');
+    const contentContainer = document.getElementById('hotelContent');
+    
+    tabsContainer.innerHTML = '';
+    contentContainer.innerHTML = '';
+    
+    const destinations=tripDestinations();
+    let activeDestination = localStorage.getItem('activeHotelDest');
+    if(!destinations.includes(activeDestination)) activeDestination=destinations[0]||'';
+    
+    destinations.forEach(dest => {
+      const btn = document.createElement('button');
+      btn.className = 'dest-tab' + (dest === activeDestination ? ' active' : '');
+      btn.textContent = dest;
+      btn.addEventListener('click', ()=>{
+        localStorage.setItem('activeHotelDest', dest);
+        renderHotels();
+      });
+      tabsContainer.appendChild(btn);
+    });
+    
+    const hotelsInDest = state.hotels.filter(h => h.destination === activeDestination);
+    
+    if(hotelsInDest.length === 0){
+      contentContainer.innerHTML = '<div class="empty-hint">אין מלונות רשומים לעיר זו</div>';
+    }else{
+      hotelsInDest.forEach((hotel)=>{
+        const card = createHotelCard(hotel);
+        contentContainer.appendChild(card);
+      });
+    }
+  }
+
+  function createHotelCard(hotel){
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+      <div class="item-card-header">
+        <input type="text" placeholder="שם המלון" value="${escapeAttr(hotel.name)}" data-field="name">
+        <button class="icon-btn" data-action="delete">✕</button>
+      </div>
+      <div class="hotel-stay-grid">
+        <input type="date" value="${escapeAttr(hotel.checkin||'')}" data-field="checkin" aria-label="צ׳ק אין">
+        <input type="date" value="${escapeAttr(hotel.checkout||'')}" data-field="checkout" aria-label="צ׳ק אאוט">
+        <input type="time" value="${escapeAttr(hotel.checkinTime||'')}" data-field="checkinTime" placeholder="שעת צ׳ק אין">
+        <input type="time" value="${escapeAttr(hotel.checkoutTime||'')}" data-field="checkoutTime" placeholder="שעת צ׳ק אאוט">
+        <input class="wide" type="text" value="${escapeAttr(hotel.booking||'')}" data-field="booking" placeholder="מספר הזמנה / אישור">
+        <textarea class="wide" placeholder="כתובת, טלפון, שעות כניסה/יציאה, הערות..." data-field="notes">${escapeHtml(hotel.notes || '')}</textarea>
+      </div>
+      <div class="stay-badge">${hotel.checkin?`<span>🟢 ${formatDateHe(hotel.checkin)}</span>`:''}${hotel.checkout?`<span>🔴 ${formatDateHe(hotel.checkout)}</span>`:''}${hotel.booking?`<span>🔖 ${escapeHtml(hotel.booking)}</span>`:''}</div>
+      <div class="uploaded-files" data-field="files"></div>
+      <div class="file-upload-area">
+        <label class="file-upload-label">📎 הוסף אישור הזמנה</label>
+        <div class="file-actions"><button type="button" class="file-pick-btn" data-pick="gallery">🖼️ גלריה</button><button type="button" class="file-pick-btn" data-pick="camera">📷 מצלמה</button><button type="button" class="file-pick-btn" data-pick="files">📁 קבצים</button></div>
+        <input type="file" class="gallery-input" accept="image/*" multiple><input type="file" class="camera-input" accept="image/*" capture="environment"><input type="file" class="files-input" accept="*/*" multiple>
+      </div>
+    `;
+    
+    const nameInput = card.querySelector('input[data-field="name"]');
+    nameInput.addEventListener('input', (e)=>{
+      hotel.name = e.target.value;
+      saveState();
+    });
+    
+    card.querySelectorAll('[data-field]').forEach(el=>{
+      if(el.dataset.field==='name' || el.dataset.field==='notes') return;
+      el.addEventListener('input', e=>{hotel[e.target.dataset.field]=e.target.value;saveState();});
+    });
+    const notesArea = card.querySelector('textarea');
+    notesArea.addEventListener('input', (e)=>{
+      hotel.notes = e.target.value;
+      saveState();
+    });
+    
+    const fileInputs = {
+      gallery: card.querySelector('.gallery-input'),
+      camera: card.querySelector('.camera-input'),
+      files: card.querySelector('.files-input')
+    };
+    card.querySelectorAll('.file-pick-btn').forEach(btn=>btn.addEventListener('click',()=>fileInputs[btn.dataset.pick]?.click()));
+    async function addFiles(fileList){
+      const files=Array.from(fileList||[]); if(!files.length)return;
+      if(!hotel.files) hotel.files=[];
+      for(const file of files){
+        if(file.size>8*1024*1024){alert(`הקובץ "${file.name}" גדול מדי. המקסימום הוא 8MB.`);continue;}
+        await new Promise(resolve=>{
+          const reader=new FileReader();
+          reader.onload=e=>{hotel.files.push({name:file.name,data:e.target.result,type:file.type||'application/octet-stream',size:file.size});resolve();};
+          reader.onerror=resolve; reader.readAsDataURL(file);
+        });
+      }
+      saveState(); renderHotels();
+    }
+    Object.values(fileInputs).forEach(input=>input?.addEventListener('change',async e=>{await addFiles(e.target.files);e.target.value='';}));
+
+    const deleteBtn = card.querySelector('[data-action="delete"]');
+    deleteBtn.addEventListener('click', ()=>{
+      state.hotels = state.hotels.filter(h => h.id !== hotel.id);
+      saveState();
+      renderHotels();
+    });
+    
+    const filesContainer = card.querySelector('[data-field="files"]');
+    if(hotel.files && hotel.files.length > 0){
+      hotel.files.forEach((file, fIdx)=>{
+        const badge = document.createElement('div');
+        badge.className = 'file-badge';
+        badge.innerHTML = `
+          <a href="${file.data}" target="_blank" rel="noopener" download="${escapeAttr(file.name)}">${escapeHtml(file.name)}</a>
+          <button data-action="delete-file" data-idx="${fIdx}">✕</button>
+        `;
+        badge.querySelector('[data-action="delete-file"]').addEventListener('click', ()=>{
+          hotel.files.splice(fIdx, 1);
+          saveState();
+          renderHotels();
+        });
+        filesContainer.appendChild(badge);
+      });
+    }
+    
+    return card;
+  }
+
+  document.getElementById('addHotelBtn').addEventListener('click', ()=>{
+    const dest = localStorage.getItem('activeHotelDest') || tripDestinations()[0] || '';
+    state.hotels.push({
+      id: uid(),
+      destination: dest,
+      name: '',
+      notes: '',
+      checkin:'', checkout:'', checkinTime:'', checkoutTime:'', booking:'',
+      files: []
+    });
+    saveState();
+    renderHotels();
+  });
+
+  /* ---------- Attractions ---------- */
+  const ATTRACTION_CATALOG={
+    'קוסמוי':[{name:'Big Buddha',notes:'מקדש ותצפית'}, {name:'Na Muang Waterfalls',notes:'מפלים בטבע'}, {name:'Ang Thong National Marine Park',notes:'שייט ופארק ימי'}],
+    'פוקט':[{name:'Big Buddha Phuket',notes:'תצפית ומקדש'}, {name:'Old Phuket Town',notes:'עיר עתיקה ושווקים'}, {name:'Phang Nga Bay',notes:'שייט בין האיים'}],
+    'קו פי פי':[{name:'Maya Bay',notes:'מפרץ מפורסם'}, {name:'Phi Phi Viewpoint',notes:'תצפית על האיים'}, {name:'Snorkeling Tour',notes:'שנורקלינג ושייט'}],
+    'קראבי':[{name:'Railay Beach',notes:'חוף וצוקים'}, {name:'Emerald Pool',notes:'בריכה טבעית'}, {name:'Tiger Cave Temple',notes:'מקדש ותצפית'}],
+    'בנגקוק':[{name:'Grand Palace',notes:'ארמון המלך'}, {name:'Wat Arun',notes:'מקדש על הנהר'}, {name:'Chatuchak Market',notes:'שוק ענק'}],
+    'טוקיו':[{name:'Shibuya Crossing',notes:'צומת מפורסם'}, {name:'Senso-ji',notes:'מקדש באסקוסה'}, {name:'Tokyo Skytree',notes:'תצפית'}],
+    'קיוטו':[{name:'Fushimi Inari',notes:'מקדש ושערי טוריאי'}, {name:'Kiyomizu-dera',notes:'מקדש ותצפית'}, {name:'Arashiyama Bamboo Grove',notes:'יער הבמבוק'}],
+    'אוסקה':[{name:'Dotonbori',notes:'אוכל וחיי לילה'}, {name:'Osaka Castle',notes:'טירה היסטורית'}, {name:'Universal Studios Japan',notes:'פארק שעשועים'}]
+  };
+  function renderAttractions(){
+    const tabsContainer = document.getElementById('attractionTabs');
+    const contentContainer = document.getElementById('attractionContent');
+    
+    tabsContainer.innerHTML = '';
+    contentContainer.innerHTML = '';
+    
+    let destinations=tripDestinations();
+    let activeDestination = localStorage.getItem('activeAttractionDest') || destinations[0] || '';
+    
+    destinations.forEach(dest => {
+      const btn = document.createElement('button');
+      btn.className = 'dest-tab' + (dest === activeDestination ? ' active' : '');
+      btn.textContent = dest;
+      btn.addEventListener('click', ()=>{
+        localStorage.setItem('activeAttractionDest', dest);
+        renderAttractions();
+      });
+      tabsContainer.appendChild(btn);
+    });
+    
+    const attractionsInDest = state.attractions.filter(a => a.destination === activeDestination);
+    const catalog=ATTRACTION_CATALOG[activeDestination]||[];
+    const catalogHtml=activeDestination?renderGoogleMapsCatalog(activeDestination,catalog):'';
+    contentContainer.innerHTML=catalogHtml;
+    if(attractionsInDest.length === 0){
+      contentContainer.insertAdjacentHTML('beforeend','<div class="empty-hint">אין אטרקציות אישיות רשומות ליעד הזה עדיין</div>');
+    }else{
+      attractionsInDest.forEach((attraction)=>{
+        const card = createAttractionCard(attraction);
+        contentContainer.appendChild(card);
+      });
+    }
+    contentContainer.querySelectorAll('[data-catalog]').forEach(btn=>btn.onclick=()=>{const item=catalog[Number(btn.dataset.catalog)];if(!item)return;if(state.attractions.some(a=>a.destination===activeDestination && a.name===item.name)){alert('האטרקציה כבר קיימת בטיול.');return;}state.attractions.push({id:uid(),destination:activeDestination,name:item.name,notes:item.notes||'',files:[]});saveState();renderAttractions();});
+    const mapsSearch=document.getElementById('mapsSearchBtn');
+    const mapsInput=document.getElementById('mapsSearchInput');
+    if(mapsSearch) mapsSearch.onclick=()=>{const q=(mapsInput?.value||'').trim();if(q) window.open(googleMapsSearchUrl(activeDestination,q),'_blank','noopener');};
+  }
+
+  function googleMapsSearchUrl(destination,query){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(query+' '+destination);}
+  function renderGoogleMapsCatalog(destination,catalog){
+    const categories=[
+      ['🍴','מסעדות','restaurants'],['☕','בתי קפה','cafes'],['🎟️','אטרקציות','tourist attractions'],
+      ['🏖️','חופים','beaches'],['🛍️','חנויות וקניות','shops shopping'],['👗','אופנה ובגדים','clothing stores'],
+      ['💄','ביוטי וקוסמטיקה','beauty stores cosmetics'],['📱','אלקטרוניקה','electronics stores'],
+      ['🛒','סופרמרקטים','supermarkets'],['💊','בתי מרקחת','pharmacies'],['🛍️','קניונים','shopping malls'],['🧺','שווקים','markets']
+    ];
+    const items=categories.map(([icon,label,q])=>`<a class="maps-item" target="_blank" rel="noopener" href="${escapeAttr(googleMapsSearchUrl(destination,q))}">${icon} ${escapeHtml(label)}<small>חיפוש עדכני ב-Google Maps באזור ${escapeHtml(destination)}</small></a>`).join('');
+    const local=catalog.map((a,i)=>`<button class="catalog-item" data-catalog="${i}">🎟️ ${escapeHtml(a.name)}<small>${escapeHtml(a.notes||'')}</small></button>`).join('');
+    return `<div class="item-card"><h3>📍 מה יש באזור ${escapeHtml(destination)}?</h3><div class="mini-summary">המאגר הקודם הוחלף בחיפוש דינמי דרך Google Maps, כך שהמקומות והחנויות יכולים להתעדכן לפי היעד והאזור.</div><div class="maps-grid">${items}</div><div class="maps-search"><input id="mapsSearchInput" placeholder="חפשי מקום ספציפי…"><button id="mapsSearchBtn" class="export-btn">🔎 חיפוש</button></div>${local?`<div class="mini-summary">✨ אטרקציות מובנות שאפשר להוסיף לטיול</div><div class="catalog-grid">${local}</div>`:''}</div>`;
+  }
+
+  async function searchOnlineAttractions(destination){
+    // Google Maps is now the live source for local places.
+    // Kept as a compatibility hook for existing builds.
+    renderAttractions();
+  }
+
+  async function ensureOnlineAttractionCatalog(destination){ return; }
+
+  function createAttractionCard(attraction){
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+      <div class="item-card-header">
+        <input type="text" placeholder="שם האטרקציה" value="${escapeAttr(attraction.name)}" data-field="name">
+        <button class="icon-btn" data-action="delete">✕</button>
+      </div>
+      <textarea placeholder="כתובת, שעות פתיחה, מחיר, הערות..." data-field="notes">${escapeHtml(attraction.notes || '')}</textarea>
+      <div class="uploaded-files" data-field="files"></div>
+      <div class="file-upload-area">
+        <label class="file-upload-label">📎 הוסף כרטיס או קבלה</label>
+        <div class="file-actions"><button type="button" class="file-pick-btn" data-pick="gallery">🖼️ גלריה</button><button type="button" class="file-pick-btn" data-pick="camera">📷 מצלמה</button><button type="button" class="file-pick-btn" data-pick="files">📁 קבצים</button></div>
+        <input type="file" class="gallery-input" accept="image/*" multiple><input type="file" class="camera-input" accept="image/*" capture="environment"><input type="file" class="files-input" accept="*/*" multiple>
+      </div>
+    `;
+    
+    const nameInput = card.querySelector('input[data-field="name"]');
+    nameInput.addEventListener('input', (e)=>{
+      attraction.name = e.target.value;
+      saveState();
+    });
+    
+    const notesArea = card.querySelector('textarea');
+    notesArea.addEventListener('input', (e)=>{
+      attraction.notes = e.target.value;
+      saveState();
+    });
+    
+    const fileInputs = {
+      gallery: card.querySelector('.gallery-input'),
+      camera: card.querySelector('.camera-input'),
+      files: card.querySelector('.files-input')
+    };
+    card.querySelectorAll('.file-pick-btn').forEach(btn=>btn.addEventListener('click',()=>fileInputs[btn.dataset.pick]?.click()));
+    async function addFiles(fileList){
+      const files=Array.from(fileList||[]); if(!files.length)return;
+      if(!attraction.files) attraction.files=[];
+      for(const file of files){
+        if(file.size>8*1024*1024){alert(`הקובץ "${file.name}" גדול מדי. המקסימום הוא 8MB.`);continue;}
+        await new Promise(resolve=>{
+          const reader=new FileReader();
+          reader.onload=e=>{attraction.files.push({name:file.name,data:e.target.result,type:file.type||'application/octet-stream',size:file.size});resolve();};
+          reader.onerror=resolve; reader.readAsDataURL(file);
+        });
+      }
+      saveState(); renderAttractions();
+    }
+    Object.values(fileInputs).forEach(input=>input?.addEventListener('change',async e=>{await addFiles(e.target.files);e.target.value='';}));
+
+    const deleteBtn = card.querySelector('[data-action="delete"]');
+    deleteBtn.addEventListener('click', ()=>{
+      state.attractions = state.attractions.filter(a => a.id !== attraction.id);
+      saveState();
+      renderAttractions();
+    });
+    
+    const filesContainer = card.querySelector('[data-field="files"]');
+    if(attraction.files && attraction.files.length > 0){
+      attraction.files.forEach((file, fIdx)=>{
+        const badge = document.createElement('div');
+        badge.className = 'file-badge';
+        badge.innerHTML = `
+          <a href="${file.data}" target="_blank" rel="noopener" download="${escapeAttr(file.name)}">${escapeHtml(file.name)}</a>
+          <button data-action="delete-file" data-idx="${fIdx}">✕</button>
+        `;
+        badge.querySelector('[data-action="delete-file"]').addEventListener('click', ()=>{
+          attraction.files.splice(fIdx, 1);
+          saveState();
+          renderAttractions();
+        });
+        filesContainer.appendChild(badge);
+      });
+    }
+    
+    return card;
+  }
+
+  document.getElementById('addAttractionBtn').addEventListener('click', ()=>{
+    const dest = localStorage.getItem('activeAttractionDest') || tripDestinations()[0] || '';
+    state.attractions.push({
+      id: uid(),
+      destination: dest,
+      name: '',
+      notes: '',
+      files: []
+    });
+    saveState();
+    renderAttractions();
+    renderFlightDocuments();
+    renderFerriesAndPassport();
+    renderFerriesAndPassport();
+    renderTripManager();
+    renderTripDateRange();
+  });
+
+  /* ---------- Budget ---------- */
+  const budgetSummary = document.getElementById('budgetSummary');
+  const catLegend = document.getElementById('catLegend');
+  const expenseList = document.getElementById('expenseList');
+
+  function renderBudget(){
+    const totals = {};
+    state.expenses.forEach(ex=>{
+      const c = ex.currency || 'USD';
+      totals[c] = (totals[c]||0) + (parseFloat(ex.amount)||0);
+    });
+    budgetSummary.innerHTML = '';
+    const currencies = Object.keys(totals).length ? Object.keys(totals) : ['USD'];
+    currencies.forEach(c=>{
+      const div = document.createElement('div');
+      div.className = 'sum-card ' + (c==='JPY'?'jp':c==='THB'?'th':'');
+      div.innerHTML = `<div class="label">סה"כ ${c}</div><div class="value">${(totals[c]||0).toLocaleString('he-IL')}</div>`;
+      budgetSummary.appendChild(div);
+    });
+
+    catLegend.innerHTML = CATEGORIES.map(c=>`<span><span class="cat-dot" style="background:${c.color}"></span>${c.label}</span>`).join('');
+
+    expenseList.innerHTML = '';
+    if(state.expenses.length===0){
+      expenseList.innerHTML = '<div class="empty-hint">אין עדיין הוצאות רשומות</div>';
+      return;
+    }
+    state.expenses.forEach((ex, idx)=>{
+      const cat = CATEGORIES.find(c=>c.id===ex.category) || CATEGORIES[CATEGORIES.length-1];
+      const row = document.createElement('div');
+      row.className = 'expense-row';
+      row.innerHTML = `
+        <span class="cat-dot" style="background:${cat.color}"></span>
+        <input type="text" placeholder="תיאור" value="${escapeAttr(ex.desc)}" data-field="desc">
+        <select data-field="category">
+          ${CATEGORIES.map(c=>`<option value="${c.id}" ${c.id===ex.category?'selected':''}>${c.label}</option>`).join('')}
+        </select>
+        <input type="number" placeholder="0" value="${ex.amount||''}" data-field="amount">
+        <select data-field="currency">
+          <option value="USD" ${ex.currency==='USD'?'selected':''}>$ USD</option>
+          <option value="EUR" ${ex.currency==='EUR'?'selected':''}>€ EUR</option>
+          <option value="GBP" ${ex.currency==='GBP'?'selected':''}>£ GBP</option>
+          <option value="ILS" ${ex.currency==='ILS'?'selected':''}>₪ ILS</option>
+          <option value="THB" ${ex.currency==='THB'?'selected':''}>฿ THB · באט</option>
+          <option value="JPY" ${ex.currency==='JPY'?'selected':''}>¥ JPY · ין</option>
+        </select>
+        <button class="del" data-action="delete">✕</button>
+      `;
+      row.querySelectorAll('[data-field]').forEach(inp=>{
+        inp.addEventListener('input', ()=>{ ex[inp.dataset.field]=inp.value; saveState(); renderBudget(); });
+        inp.addEventListener('change', ()=>{ ex[inp.dataset.field]=inp.value; saveState(); renderBudget(); });
+      });
+      row.querySelector('[data-action="delete"]').addEventListener('click', ()=>{
+        state.expenses.splice(idx,1); saveState(); renderBudget();
+      });
+      expenseList.appendChild(row);
+    });
+  }
+
+  document.getElementById('addExpenseBtn').addEventListener('click', ()=>{
+    state.expenses.unshift({ id:uid(), desc:'', category:'other', amount:'', currency:'USD' });
+    saveState(); renderBudget();
+  });
+
+  /* ---------- Lists ---------- */
+  const listsWrap = document.getElementById('listsWrap');
+
+  function renderLists(){
+    if(!listsWrap) return;
+    listsWrap.innerHTML = '';
+    state.lists.forEach((list, li)=>{
+      const block = document.createElement('div');
+      block.className = 'list-block';
+      block.innerHTML = `
+        <h3><input type="text" value="${escapeAttr(list.name)}" style="background:none;border:none;color:inherit;font:inherit;width:100%;outline:none" data-action="rename"><button class="icon-btn" data-action="delete-list" style="font-size:12px">מחק</button></h3>
+        <div class="items"></div>
+        <button class="add-item-btn" data-action="add-item">+ הוסף פריט</button>
+      `;
+      const itemsWrap = block.querySelector('.items');
+      if(list.items.length===0){
+        itemsWrap.innerHTML = '<div class="empty-hint" style="padding:8px 0">הרשימה ריקה</div>';
+      }
+      list.items.forEach((item, ii)=>{
+        const row = document.createElement('div');
+        row.className = 'list-item' + (item.done?' done':'');
+        row.innerHTML = `
+          <input type="checkbox" ${item.done?'checked':''}>
+          <input type="text" value="${escapeAttr(item.text)}" placeholder="פריט">
+          <button class="del">✕</button>
+        `;
+        row.querySelector('input[type=checkbox]').addEventListener('change', (e)=>{
+          item.done = e.target.checked; saveState(); renderLists();
+        });
+        row.querySelector('input[type=text]').addEventListener('input', (e)=>{
+          item.text = e.target.value; saveState();
+        });
+        row.querySelector('.del').addEventListener('click', ()=>{
+          list.items.splice(ii,1); saveState(); renderLists();
+        });
+        itemsWrap.appendChild(row);
+      });
+      block.querySelector('[data-action="rename"]').addEventListener('input', (e)=>{
+        list.name = e.target.value; saveState();
+      });
+      block.querySelector('[data-action="delete-list"]').addEventListener('click', ()=>{
+        state.lists.splice(li,1); saveState(); renderLists();
+      });
+      block.querySelector('[data-action="add-item"]').addEventListener('click', ()=>{
+        list.items.push({ id:uid(), text:'', done:false }); saveState(); renderLists();
+      });
+      listsWrap.appendChild(block);
+    });
+  }
+
+  document.getElementById('addListBtn')?.addEventListener('click', ()=>{
+    state.lists.push({ id:uid(), name:'רשימה חדשה', items:[] });
+    saveState(); renderLists();
+  });
+
+  /* ---------- Nav ---------- */
+  document.querySelectorAll('nav button').forEach(btn=>{
+    btn.addEventListener('click', ()=>switchView(btn.dataset.view));
+  });
+
+
+  /* ---------- Today / Checklist / Countdown ---------- */
+
+  /* ---------- Dashboard ---------- */
+  function formatDateHe(date){
+    if(!date) return 'לא הוגדר';
+    try{return new Date(date+'T12:00:00').toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});}catch(e){return date;}
+  }
+  function upcomingDay(){
+    const today=localDateISO('Asia/Jerusalem');
+    return [...state.days].filter(d=>d.date).sort((a,b)=>a.date.localeCompare(b.date)).find(d=>d.date>=today) || [...state.days].find(d=>d.city) || null;
+  }
+  function upcomingFlight(){
+    const today=new Date().toISOString().slice(0,10), arr=[];
+    Object.entries(state.flightInfo||{}).forEach(([id,f])=>{
+      if(id==='domestic' && Array.isArray(f)) f.forEach((x,i)=>{if(x?.date) arr.push({id:`domestic-${i+1}`,...x});});
+      else if(f?.date) arr.push({id,...f});
+    });
+    return arr.sort((a,b)=>a.date.localeCompare(b.date)).find(f=>f.date>=today) || null;
+  }
+  function nextHotel(){
+    const d=upcomingDay(); if(!d?.city) return state.hotels.find(h=>h.name) || null;
+    return state.hotels.find(h=>h.destination===d.city && h.name) || state.hotels.find(h=>h.name) || null;
+  }
+  function renderDashboard(){
+    const grid=document.getElementById('dashboardGrid'); if(!grid)return;
+    const d=upcomingDay(), f=upcomingFlight(), h=nextHotel();
+    const docs=Object.values(state.flightDocuments||{}).reduce((n,a)=>n+(a?.length||0),0);
+    const spent=state.expenses.reduce((n,e)=>n+(parseFloat(e.amount)||0),0);
+    const completed=(state.preTripChecklist||[]).filter(i=>i.done).length;
+    const totalItems=(state.preTripChecklist||[]).length;
+    const countdown=daysUntil(countdownTarget());
+    const progress=state.days.length ? Math.round(state.days.filter(x=>x.date && x.date<=localDateISO('Asia/Jerusalem')).length/state.days.length*100) : 0;
+    const activityTotal=state.days.reduce((n,x)=>n+(x.activities||[]).length,0), activityDone=state.days.reduce((n,x)=>n+(x.activities||[]).filter(a=>a.done).length,0);
+    const flightCount=Object.values(state.flightInfo||{}).reduce((n,x)=>n+(Array.isArray(x)?x.filter(f=>f?.date||f?.number||f?.route).length:(x?.date||x?.number||x?.route?1:0)),0);
+    const hotelCount=state.hotels.filter(x=>x.name||x.checkin||x.checkout).length;
+    document.getElementById('dashGreeting').textContent = d ? `התחנה הקרובה: ${d.city||'לא נבחרה עיר'} · ${d.date?formatDateHe(d.date):'תאריך לא הוגדר'}` : 'הכול מוכן להתחיל — הוסיפי את היום הראשון במסלול';
+    const mini=document.getElementById('dashCountdownMini'); if(mini) mini.textContent=countdown===null?'—':(countdown<0?'✓':countdown);
+    const route=document.getElementById('dashRoute');
+    if(route){
+      const cities=tripDestinations();
+      const todayLocal=localDateISO('Asia/Jerusalem');
+      const nextDay=(state.days||[]).filter(d=>d?.date && d.date>=todayLocal).sort((a,b)=>a.date.localeCompare(b.date))[0];
+      const nextCity=normalizeDestinationName(nextDay?.city||'');
+      route.innerHTML=cities.length?cities.map(city=>{const isNext=nextCity ? normalizeDestinationName(city)===nextCity : city===cities[0]; return `<span class="dash-chip ${isNext?'current':''}">📍 ${escapeHtml(city)}</span>`;}).join(''):'<span class="dash-chip">✨ הוסיפי יעדים כדי לראות את המסלול כאן</span>';
+    }
+    grid.innerHTML=`
+      <div class="dash-card" data-go="itinerary"><div class="dash-icon">📅</div><div class="dash-label">היום הקרוב</div><div class="dash-value">${escapeHtml(d?.city||'לא הוגדר')}</div><div class="dash-note">${d?.date?formatDateHe(d.date):'בחרי תאריך ועיר בתכנון'} · ${d?(d.activities||[]).length:'0'} פעילויות</div></div>
+      <div class="dash-card" data-go="flights"><div class="dash-icon">✈️</div><div class="dash-label">הטיסה הבאה</div><div class="dash-value">${escapeHtml(f?.number||'לא הוגדרה')}</div><div class="dash-note">${f ? `${formatDateHe(f.date)} · ${escapeHtml(f.route||'מסלול לא הוגדר')}` : `${flightCount} טיסות הוזנו`}</div></div>
+      <div class="dash-card" data-go="hotels"><div class="dash-icon">🏨</div><div class="dash-label">לינה קרובה</div><div class="dash-value">${escapeHtml(h?.name||'לא הוגדר')}</div><div class="dash-note">${escapeHtml(h?.destination||d?.city||'בחרי מלון')} · ${hotelCount} מלונות</div></div>
+      <div class="dash-card" data-go="today"><div class="dash-icon">✅</div><div class="dash-label">צ׳ק־ליסט</div><div class="dash-value">${completed}/${totalItems}</div><div class="dash-note">${totalItems ? `${Math.round(completed/totalItems*100)}% הושלם` : 'הוסיפי משימות לפני הטיול'}</div></div>
+      <div class="dash-card" data-go="budget"><div class="dash-icon">💰</div><div class="dash-label">הוצאות</div><div class="dash-value">${spent.toLocaleString('he-IL',{maximumFractionDigits:0})}</div><div class="dash-note">${state.expenses.length} הוצאות רשומות · במטבעות המקור</div></div>
+      <div class="dash-card" data-go="flights"><div class="dash-icon">📎</div><div class="dash-label">מסמכים</div><div class="dash-value">${docs}</div><div class="dash-note">טיסות · מעבורות · מסמכים</div></div>
+      <div class="dash-card" data-go="itinerary"><div class="dash-icon">🗺️</div><div class="dash-label">פעילויות</div><div class="dash-value">${activityDone}/${activityTotal}</div><div class="dash-note">פעילויות שהושלמו במסלול</div></div>
+      <div class="dash-card" data-go="today"><div class="dash-icon">⏳</div><div class="dash-label">ספירה לאחור</div><div class="dash-value">${countdown===null?'—':countdown<0?'התחלנו!':countdown}</div><div class="dash-note">${countdown===null?'הגדירי תאריך יעד':'ימים עד תחילת הטיול'}</div></div>`;
+    document.getElementById('tripProgressWrap').innerHTML=`<div class="progress-head"><span>התקדמות במסלול</span><b>${progress}%</b></div><div class="progress"><span style="width:${progress}%"></span></div>`;
+    grid.querySelectorAll('[data-go]').forEach(el=>el.onclick=()=>switchView(el.dataset.go));
+  }
+  function switchView(name){
+    const special=name==='ferries'||name==='passport';
+    const target=special?'flights':name;
+    document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+target));
+    window.scrollTo({top:0,behavior:'smooth'});
+    if(special)setTimeout(()=>{const el=document.getElementById(name==='ferries'?'ferrySection':'passportSection');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},120);
+  }
+  document.getElementById('dashMapBtn').onclick=()=>document.getElementById('openMapBtn').click();
+  document.getElementById('dashWeatherBtn').onclick=()=>document.getElementById('weatherBtn').click();
+  document.getElementById('dashFlightsBtn').onclick=()=>switchView('flights');
+
+  /* ---------- Per-trip lock ---------- */
+  const TRIP_LOCKS_KEY='trip-planner-locks-v1';
+  let unlockedTripIds=new Set();
+  let pendingUnlockTripId=null;
+  function readTripLocks(){try{return JSON.parse(localStorage.getItem(TRIP_LOCKS_KEY)||'{}')||{};}catch(e){return {};}}
+  function writeTripLocks(locks){localStorage.setItem(TRIP_LOCKS_KEY,JSON.stringify(locks||{}));}
+  function isTripLocked(id){const locks=readTripLocks();return !!locks[id];}
+  async function hashLockCode(code){
+    const text=String(code||'');
+    if(window.crypto?.subtle){
+      const data=new TextEncoder().encode(text);
+      const buf=await crypto.subtle.digest('SHA-256',data);
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+    let h=2166136261; for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619);} return 'fnv-'+(h>>>0).toString(16);
+  }
+  function showTripLock(id,firstSetup=false){
+    pendingUnlockTripId=id;
+    const trips=readTrips(),name=trips[id]?.name||'טיול';
+    document.getElementById('lockTitle').textContent=firstSetup?'הגדרת קוד לטיול':'טיול נעול';
+    document.getElementById('lockSubtitle').textContent=firstSetup?`הגדירי קוד גישה עבור "${name}". מי שאין לו את הקוד לא יוכל לפתוח את הטיול.`:`הזיני את קוד הנעילה של "${name}" כדי לצפות במידע.`;
+    document.getElementById('lockInput').value='';document.getElementById('lockError').textContent='';
+    document.getElementById('lockOverlay').style.display='flex';
+    setTimeout(()=>document.getElementById('lockInput').focus(),50);
+    document.getElementById('lockSubmit').onclick=async()=>{
+      const input=document.getElementById('lockInput').value.trim();
+      if(!input){document.getElementById('lockError').textContent='הזיני קוד.';return;}
+      const locks=readTripLocks();
+      if(firstSetup){
+        if(input.length<4){document.getElementById('lockError').textContent='הקוד חייב להכיל לפחות 4 תווים.';return;}
+        const confirmCode=prompt('הזיני שוב את קוד הנעילה לאישור:');
+        if(confirmCode!==input){document.getElementById('lockError').textContent='הקודים אינם זהים.';return;}
+        locks[id]=await hashLockCode(input);writeTripLocks(locks);unlockedTripIds.add(id);document.getElementById('lockOverlay').style.display='none';renderAll();
+      }else{
+        if((await hashLockCode(input))===locks[id]){unlockedTripIds.add(id);document.getElementById('lockOverlay').style.display='none';renderAll();}else document.getElementById('lockError').textContent='קוד שגוי.';
+      }
+    };
+    document.getElementById('lockInput').onkeydown=e=>{if(e.key==='Enter')document.getElementById('lockSubmit').click();};
+  }
+  async function ensureTripUnlocked(id){
+    if(unlockedTripIds.has(id))return true;
+    if(isTripLocked(id)){showTripLock(id,false);return false;}
+    // Existing trips from older versions get a code before first access.
+    showTripLock(id,true);return false;
+  }
+  async function setInitialTripLock(id){
+    const code=prompt('הגדירי קוד נעילה לטיול החדש (לפחות 4 תווים):');
+    if(code===null||code.trim().length<4){alert('יש להגדיר קוד נעילה של לפחות 4 תווים.');return setInitialTripLock(id);}
+    const confirmCode=prompt('הזיני שוב את הקוד לאישור:');
+    if(confirmCode!==code){alert('הקודים אינם זהים.');return setInitialTripLock(id);}
+    const locks=readTripLocks();locks[id]=await hashLockCode(code.trim());writeTripLocks(locks);unlockedTripIds.add(id);
+  }
+  async function setTripLock(){
+    const locks=readTripLocks();
+    const code=prompt('קוד נעילה חדש לטיול (לפחות 4 תווים):');
+    if(code===null)return;if(code.trim().length<4){alert('הקוד חייב להכיל לפחות 4 תווים.');return;}
+    const confirmCode=prompt('הזיני שוב את הקוד לאישור:');if(confirmCode!==code){alert('הקודים אינם זהים.');return;}
+    locks[activeTripId]=await hashLockCode(code.trim());writeTripLocks(locks);unlockedTripIds.add(activeTripId);alert('🔒 קוד הנעילה נשמר.');
+  }
+  document.getElementById('lockTripBtn').onclick=setTripLock;
+
+  /* ---------- Multiple Trips ---------- */
+  const TRIPS_KEY='trip-planner-trips'; let activeTripId='default';
+  function readTrips(){try{return JSON.parse(localStorage.getItem(TRIPS_KEY)||'{}')||{};}catch(e){return {};}}
+  function readTripsSafe(){return readTrips();}
+  function snapshot(){return JSON.parse(JSON.stringify(state));}
+  function renderTripManager(){const sel=document.getElementById('tripSelect');if(!sel)return;const trips=readTrips();if(!trips[activeTripId]){trips[activeTripId]={name:'הטיול שלי',state:snapshot()};localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));}sel.innerHTML=Object.entries(trips).map(([id,t])=>`<option value="${escapeAttr(id)}">${escapeHtml(t.name||'טיול')}</option>`).join('');sel.value=activeTripId;const title=trips[activeTripId]?.name||'טיול';document.querySelector('header h1').textContent=title;const dash=document.querySelector('.dash-title');if(dash)dash.textContent=title;}
+  document.getElementById('tripSelect').onchange=async e=>{
+    const nextId=e.target.value;
+    const trips=readTrips(),t=trips[nextId];
+    if(!t){document.getElementById('tripSelect').value=activeTripId;return;}
+    await persistState();
+    activeTripId=nextId;
+    localStorage.setItem('trip-active-id',activeTripId);
+    state=JSON.parse(JSON.stringify(t.state||{}));
+    normalizeState();
+    tripDestinations();
+    renderAll();
+    await ensureTripUnlocked(activeTripId);
+  };
+  document.getElementById('duplicateTripBtn').onclick=async()=>{const trips=readTrips(),name=prompt('שם לטיול החדש:',(trips[activeTripId]?.name||'טיול')+' — עותק');if(!name)return;const choice=prompt('מה לשכפל? כתבי מספרים מופרדים בפסיקים:\n1 ימים\n2 מסעדות\n3 מלונות\n4 אטרקציות\n5 רשימות\n6 טיסות\n7 מסמכים\n8 מעבורות\n9 הכל','9');if(choice===null)return;const nums=choice.split(',').map(x=>x.trim()),all=nums.includes('9'),src=snapshot();const blank={days:[],expenses:[],lists:[],restaurants:[],hotels:[],attractions:[],destinations:[],flightDocuments:{elal:[],domestic:[],connection:[]},flightInfo:{elal:{date:'',route:'',number:''},domestic:[{id:'',date:'',route:'',number:''}],connection:{date:'',route:'',number:''}},ferries:[],passport:{photo:null,number:'',expiry:'',holder:'',notes:'',documents:[]},preTripChecklist:[],countdownDate:''};const copy=all?src:blank;if(!all){if(nums.includes('1'))copy.days=JSON.parse(JSON.stringify(src.days||[]));if(nums.includes('2'))copy.restaurants=JSON.parse(JSON.stringify(src.restaurants||[]));if(nums.includes('3'))copy.hotels=JSON.parse(JSON.stringify(src.hotels||[]));if(nums.includes('4'))copy.attractions=JSON.parse(JSON.stringify(src.attractions||[]));if(nums.includes('5'))copy.lists=JSON.parse(JSON.stringify(src.lists||[]));if(nums.includes('6')){copy.flightDocuments=JSON.parse(JSON.stringify(src.flightDocuments||{}));copy.flightInfo=JSON.parse(JSON.stringify(src.flightInfo||{}));}if(nums.includes('7'))copy.passports=JSON.parse(JSON.stringify(src.passports||((src.passport)?[src.passport]:[])));if(nums.includes('8'))copy.ferries=JSON.parse(JSON.stringify(src.ferries||[]));}const id=uid();trips[id]={name,state:copy};localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));activeTripId=id;localStorage.setItem('trip-active-id',activeTripId);state=copy;renderAll();alert('הטיול שוכפל ונשמר בנפרד.');};
+  const newTripModal=document.getElementById('tripCreateModal');
+  const newTripNameInput=document.getElementById('newTripNameInput');
+  const destinationSearchInput=document.getElementById('destinationSearchInput');
+  const selectedDestinationsBox=document.getElementById('selectedDestinations');
+  const destinationPickerGrid=document.getElementById('destinationPickerGrid');
+  const customDestinationInput=document.getElementById('customDestinationInput');
+  let newTripSelectedDestinations=[];
+
+  function openNewTripModal(){
+    newTripSelectedDestinations=[];
+    newTripNameInput.value=''; destinationSearchInput.value=''; customDestinationInput.value='';
+    renderNewTripDestinationPicker();
+    newTripModal.style.display='flex'; newTripModal.setAttribute('aria-hidden','false');
+    setTimeout(()=>newTripNameInput.focus(),60);
+  }
+  function closeNewTripModal(){newTripModal.style.display='none';newTripModal.setAttribute('aria-hidden','true');}
+  let destinationSearchTimer=null;
+  async function renderNewTripDestinationPicker(){
+    const q=String(destinationSearchInput.value||'').trim().toLowerCase();
+    const selected=new Set(newTripSelectedDestinations);
+    selectedDestinationsBox.innerHTML=newTripSelectedDestinations.length
+      ? newTripSelectedDestinations.map((d,i)=>`<span class="chip">${DESTINATION_FLAGS[normalizeDestinationName(d)]||'📍'} ${escapeHtml(d)} <button type="button" data-remove-dest="${i}" aria-label="הסרת ${escapeAttr(d)}">×</button></span>`).join('')
+      : '<span class="mini-summary">בחרי יעד אחד או יותר לפי סדר הנסיעה</span>';
+    const list=DESTINATION_PRESETS.filter(([city,country])=>!q || city.toLowerCase().includes(q) || country.toLowerCase().includes(q));
+    destinationPickerGrid.innerHTML=list.length?list.map(([city,country])=>{
+      const on=selected.has(city);
+      return `<button type="button" class="destination-choice ${on?'selected':''}" data-preset-dest="${escapeAttr(city)}"><strong>${DESTINATION_FLAGS[city]||'📍'} ${escapeHtml(city)}</strong><small>${escapeHtml(country)} ${on?'· ✓ נבחר':''}</small></button>`;
+    }).join(''):'<div class="empty-hint">לא מצאתי במאגר — מחפשת עכשיו במאגר ערים עולמי…</div>';
+    destinationPickerGrid.querySelectorAll('[data-preset-dest]').forEach(btn=>btn.onclick=()=>{
+      const d=normalizeDestinationName(btn.dataset.presetDest);
+      if(newTripSelectedDestinations.includes(d))newTripSelectedDestinations=newTripSelectedDestinations.filter(x=>x!==d);
+      else newTripSelectedDestinations.push(d);
+      renderNewTripDestinationPicker();
+    });
+    selectedDestinationsBox.querySelectorAll('[data-remove-dest]').forEach(btn=>btn.onclick=()=>{newTripSelectedDestinations.splice(Number(btn.dataset.removeDest),1);renderNewTripDestinationPicker();});
+
+    if(!q || q.length<2) return;
+    clearTimeout(destinationSearchTimer);
+    destinationSearchTimer=setTimeout(async()=>{
+      try{
+        const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=8&language=he&format=json',{cache:'no-store'});
+        if(!r.ok)return;
+        const j=await r.json();
+        const results=(j.results||[]).filter(x=>x.name);
+        if(!results.length)return;
+        const existing=destinationPickerGrid.innerHTML;
+        const online=results.map(x=>{
+          const city=x.name, country=x.country||'';
+          const flag=countryFlag(x.country_code);
+          const on=selected.has(city);
+          return `<button type="button" class="destination-choice ${on?'selected':''}" data-online-dest="${escapeAttr(city)}" data-country="${escapeAttr(country)}"><strong>${flag} ${escapeHtml(city)}</strong><small>${escapeHtml(country)}${x.admin1?' · '+escapeHtml(x.admin1):''} ${on?'· ✓ נבחר':''}</small></button>`;
+        }).join('');
+        destinationPickerGrid.innerHTML=(existing&& !existing.includes('לא מצאתי'))?existing+online:online;
+        destinationPickerGrid.querySelectorAll('[data-online-dest]').forEach(btn=>btn.onclick=()=>{
+          const d=normalizeDestinationName(btn.dataset.onlineDest);
+          if(newTripSelectedDestinations.includes(d))newTripSelectedDestinations=newTripSelectedDestinations.filter(x=>x!==d);
+          else newTripSelectedDestinations.push(d);
+          renderNewTripDestinationPicker();
+        });
+      }catch(e){ console.warn('global destination search failed',e); }
+    },280);
+  }
+  destinationSearchInput.oninput=()=>renderNewTripDestinationPicker();
+  document.getElementById('addCustomDestinationBtn').onclick=()=>{
+    const d=normalizeDestinationName(customDestinationInput.value);
+    if(!d)return;
+    if(!newTripSelectedDestinations.includes(d))newTripSelectedDestinations.push(d);
+    customDestinationInput.value=''; renderNewTripDestinationPicker();
+  };
+  customDestinationInput.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();document.getElementById('addCustomDestinationBtn').click();}};
+  document.getElementById('cancelNewTripBtn').onclick=closeNewTripModal;
+  newTripModal.addEventListener('click',e=>{if(e.target===newTripModal)closeNewTripModal();});
+  document.getElementById('createNewTripBtn').onclick=async()=>{
+    const trips=readTrips();
+    const name=String(newTripNameInput.value||'').trim();
+    if(!name){newTripNameInput.focus();alert('תני שם לטיול החדש.');return;}
+    const destinations=[...new Set(newTripSelectedDestinations.map(normalizeDestinationName).filter(Boolean))];
+    const blank={days:[],expenses:[],lists:[],restaurants:[],hotels:[],attractions:[],destinations,flightDocuments:{elal:[],domestic:[],connection:[]},flightInfo:{elal:{date:'',route:'',number:''},domestic:[{id:uid(),date:'',route:'',number:''}],connection:{date:'',route:'',number:''}},ferries:[],passport:{photo:null,number:'',expiry:'',holder:'',notes:'',documents:[]},preTripChecklist:[],countdownDate:''};
+    const id=uid();
+    trips[id]={name,state:blank};
+    localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));
+    activeTripId=id;
+    localStorage.setItem('trip-active-id',activeTripId);
+    state=blank;
+    closeNewTripModal();
+    renderAll();
+    await setInitialTripLock(id);
+    renderAll();
+    for(const d of destinations) ensureOnlineAttractionCatalog(d);
+  };
+
+  document.getElementById('newTripBtn').onclick=openNewTripModal;
+
+  document.getElementById('deleteTripBtn').onclick=()=>{const trips=readTrips();const ids=Object.keys(trips);if(ids.length<=1){alert('אי אפשר למחוק את הטיול היחיד.');return;}const current=trips[activeTripId];if(!current)return;if(!confirm(`למחוק את הטיול "${current.name||'טיול'}"?\nהפעולה לא ניתנת לביטול.`))return;delete trips[activeTripId];const nextId=Object.keys(trips)[0];localStorage.setItem(TRIPS_KEY,JSON.stringify(trips));activeTripId=nextId;localStorage.setItem('trip-active-id',activeTripId);state=trips[nextId].state;renderAll();alert('הטיול נמחק.');};
+
+  /* ---------- Helpers ---------- */
+  function escapeHtml(str){
+    if(!str) return '';
+    return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function escapeAttr(str){ return escapeHtml(str); }
+
+  function clearTripSpecificToolResults(){
+    const w=document.getElementById('weatherResult'); if(w){w.style.display='none';w.innerHTML='';}
+    const c=document.getElementById('worldClockResult'); if(c){c.style.display='none';c.innerHTML='';}
+    try{localStorage.removeItem('activeRestaurantDest');localStorage.removeItem('activeHotelDest');localStorage.removeItem('activeAttractionDest');}catch(e){}
+  }
+  function renderAll(){
+    normalizeAllDestinations();
+    tripDestinations();
+    clearTripSpecificToolResults();
+    renderDashboard();
+    renderToday();
+    renderDays();
+    renderBudget();
+    renderLists();
+    renderRestaurants();
+    renderHotels();
+    renderAttractions();
+    renderFlightDocuments();
+    renderFerriesAndPassport();
+    renderTripManager();
+    renderTripDateRange();
+  }
+
+
+  let deferredInstallPrompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;document.getElementById('installBtn').style.display='inline-block';});
+  document.getElementById('installBtn').addEventListener('click',async()=>{if(deferredInstallPrompt){deferredInstallPrompt.prompt();deferredInstallPrompt=null;}});
+  document.getElementById('saveBtn').addEventListener('click',async()=>{await persistState();const b=document.getElementById('saveBtn');b.textContent='✓ נשמר';setTimeout(()=>b.textContent='💾 שמירה',1200);});
+  document.getElementById('exportBtn').addEventListener('click',()=>{const backup={version:3,activeTripId,trips:readTripsSafe(),state};const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='יומן-מסע-גיבוי.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+
+  document.getElementById('refreshPageBtn')?.addEventListener('click',async()=>{try{await persistState();}catch(e){} window.location.reload();});
+  let rates={USD:3.4,EUR:3.95,GBP:4.6,ILS:1,THB:0.095,JPY:0.022};
+  async function updateRates(){
+    try{
+      const r=await fetch('https://open.er-api.com/v6/latest/ILS');
+      const data=await r.json();
+      if(data&&data.rates){['USD','EUR','GBP','ILS','THB','JPY'].forEach(c=>{if(data.rates[c]) rates[c]=1/data.rates[c];});}
+      localStorage.setItem('trip-rates',JSON.stringify(rates));
+      document.getElementById('ratesUpdated').textContent='השערים עודכנו עכשיו';
+      renderConversion();
+    }catch(e){document.getElementById('ratesUpdated').textContent='לא ניתן לעדכן כרגע — מוצגים השערים האחרונים שנשמרו.';}
+  }
+  function renderConversion(){
+    const c=document.getElementById('convertCurrency').value; const a=parseFloat(document.getElementById('convertAmount').value);
+    document.getElementById('convertResult').textContent=Number.isFinite(a)?`${a.toLocaleString('he-IL')} ${c} ≈ ${(a*rates[c]).toLocaleString('he-IL',{style:'currency',currency:'ILS'})}`:'הזיני סכום כדי להמיר';
+  }
+  try{const saved=JSON.parse(localStorage.getItem('trip-rates'));if(saved)rates={...rates,...saved}}catch(e){}
+  document.getElementById('convertCurrency').addEventListener('change',renderConversion);
+  document.getElementById('convertAmount').addEventListener('input',renderConversion);
+  document.getElementById('refreshRatesBtn').addEventListener('click',updateRates);
+  updateRates();
+
+  if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  loadState();
+</script>
+</body>
+</html>
